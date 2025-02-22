@@ -1,0 +1,24 @@
+{
+	"include": ["env.d.ts", "**/*.ts", "**/*.tsx", "tailwind.config.js", ".react-router/types/**/*"],
+	"compilerOptions": {
+		"lib": ["DOM", "DOM.Iterable", "ES2019"],
+		"isolatedModules": true,
+		"esModuleInterop": true,
+		"jsx": "react-jsx",
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"resolveJsonModule": true,
+		"target": "ES2019",
+		"strict": true,
+		"baseUrl": ".",
+		"paths": {
+			"~/*": ["./app/*"]
+		},
+		"noEmit": true,
+		"forceConsistentCasingInFileNames": true,
+		"allowJs": true,
+		"skipLibCheck": true,
+		"types": ["@react-router/node", "vite/client"],
+		"rootDirs": [".", "./.react-router/types"]
+	}
+}

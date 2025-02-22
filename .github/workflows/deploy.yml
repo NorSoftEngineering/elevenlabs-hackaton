@@ -1,0 +1,32 @@
+name: 'Deploy'
+
+on:
+  release:
+    types:
+      - published
+  push:
+    branches:
+      - dev
+      - qa
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: 'Deploy app & run sanity tests'
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--scope=${{ secrets.VERCEL_SCOPE }}'
+          scope: ${{ secrets.VERCEL_ORG_ID }}
+          alias-domains: |
+            dnb-stack.vercel.app
+
+      # uncomment the next 2 lines if you want your tests to run after the deploy
+      # - run: pnpm
+      # - run: pnpm cypress:run
