@@ -1,9 +1,20 @@
 import { Link } from 'react-router';
 import { useRole } from '~/contexts/RoleContext';
 import { isInterviewerRole } from '~/types/role';
+import { useState } from 'react';
+import { useOutletContext } from 'react-router';
+import type { OutletContext } from '~/types/context';
+import { Session } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 
-export default function Navigation() {
+export default function Navigation({ context }: { context: { session: Session; supabase: SupabaseClient } }) {
 	const { userRole, isLoading } = useRole();
+	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+	const handleSignOut = async () => {
+		await context.supabase.auth.signOut();
+		// The auth state change in root.tsx will trigger a page reload
+	};
 
 	if (isLoading) return null;
 
@@ -43,7 +54,7 @@ export default function Navigation() {
 							))}
 						</div>
 					</div>
-					<div className="flex items-center">
+					<div className="flex items-center space-x-4">
 						<div className="flex-shrink-0">
 							<div className="relative inline-block text-left">
 								<div>
@@ -52,6 +63,40 @@ export default function Navigation() {
 									</span>
 								</div>
 							</div>
+						</div>
+
+						<div className="relative">
+							<button
+								onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+								className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20 focus:outline-none"
+							>
+								<span className="text-sm font-medium">
+									{context.session?.user.email?.[0].toUpperCase() || 'G'}
+								</span>
+							</button>
+
+							{isDropdownOpen && (
+								<div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100">
+									<div className="px-4 py-3">
+										<p className="text-sm">Signed in as</p>
+										<p className="text-sm font-medium text-gray-900 truncate">
+											{context.session?.user.email || 'Guest'}
+										</p>
+									</div>
+									<div className="py-1" role="menu">
+										<button
+											onClick={handleSignOut}
+											className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+											role="menuitem"
+										>
+											<svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+											</svg>
+											Logout
+										</button>
+									</div>
+								</div>
+							)}
 						</div>
 					</div>
 				</div>

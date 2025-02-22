@@ -51,7 +51,7 @@ export default function App() {
 			<body>
 				<RoleProvider env={env}>
 					<OrganizationProvider env={env}>
-						<Layout>
+						<Layout context={{ supabase, session }}>
 							<Outlet context={{ supabase, session }} />
 						</Layout>
 					</OrganizationProvider>
