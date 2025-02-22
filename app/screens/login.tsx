@@ -1,6 +1,8 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { useLoaderData } from 'react-router';
 
+import { getSupabaseEnv } from '~/utils/env.server';
+
 export const headers = () => ({
 	'Cache-Control': 'no-store',
 });
@@ -8,10 +10,7 @@ export const headers = () => ({
 export const loader = async ({ request }: { request: Request }) => {
 	const url = new URL(request.url);
 	return {
-		env: {
-			SUPABASE_URL: process.env.SUPABASE_URL!,
-			SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY!,
-		},
+		env: getSupabaseEnv(),
 		origin: url.origin,
 	};
 };

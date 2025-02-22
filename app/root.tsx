@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Links, LinksFunction, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from 'react-router';
 
 import Navbar from '~/components/Navbar';
+import { getSupabaseEnv } from '~/utils/env.server';
 import { createSupabaseServer } from '~/utils/supabase.server';
 
 import globalStyles from './styles/globals.css?url';
@@ -25,10 +26,7 @@ export const loader = async ({ request }: { request: Request }) => {
 	} = await supabase.auth.getSession();
 
 	return {
-		env: {
-			SUPABASE_URL: process.env.SUPABASE_URL!,
-			SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY!,
-		},
+		env: getSupabaseEnv(),
 		session,
 		headers,
 	};
@@ -42,7 +40,7 @@ export default function App() {
 	useEffect(() => {
 		const {
 			data: { subscription },
-		} = supabase.auth.onAuthStateChange((event, newSession) => {
+		} = supabase.auth.onAuthStateChange((_event, newSession) => {
 			if (newSession?.access_token !== session?.access_token) {
 				// Instead of revalidate, we'll do a full page refresh for edge
 				window.location.reload();
