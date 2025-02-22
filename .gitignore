@@ -11,6 +11,7 @@ node_modules
 
 .cache
 .env*
+!.env.example
 .vercel
 .output
 .vscode
