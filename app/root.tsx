@@ -1,10 +1,10 @@
 import { createBrowserClient } from '@supabase/ssr';
-import { useEffect } from 'react';
 import { Links, LinksFunction, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from 'react-router';
 
 import Navbar from '~/components/Navbar';
 import { getSupabaseEnv } from '~/utils/env.server';
 import { createSupabaseServer } from '~/utils/supabase.server';
+import { AppLayout } from './layouts/AppLayout';
 
 import globalStyles from './styles/globals.css?url';
 import styles from './tailwind.css?url';
@@ -37,21 +37,6 @@ export default function App() {
 	const supabase = createBrowserClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
 	const context = { supabase, session };
 
-	useEffect(() => {
-		const {
-			data: { subscription },
-		} = supabase.auth.onAuthStateChange((_event, newSession) => {
-			if (newSession?.access_token !== session?.access_token) {
-				// Instead of revalidate, we'll do a full page refresh for edge
-				window.location.reload();
-			}
-		});
-
-		return () => {
-			subscription.unsubscribe();
-		};
-	}, [supabase, session]);
-
 	return (
 		<html lang="en">
 			<head>
@@ -62,8 +47,10 @@ export default function App() {
 			</head>
 			<body>
 				<Navbar context={context} />
-				<main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-					<Outlet context={context} />
+				<main className="">
+					<AppLayout env={env}>
+						<Outlet context={context} />
+					</AppLayout>
 				</main>
 				<ScrollRestoration />
 				<Scripts />
