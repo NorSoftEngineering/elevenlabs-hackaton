@@ -1,8 +1,8 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { useState } from 'react';
 import { useLoaderData, useNavigate } from 'react-router';
-import { getSupabaseEnv } from '~/utils/env.server';
 import RoleGuard from '~/components/RoleGuard';
+import { getSupabaseEnv } from '~/utils/env.server';
 
 export const loader = async () => {
 	return {
@@ -92,7 +92,9 @@ export default function NewOrganization() {
 			<div className="mx-auto max-w-md">
 				<div className="rounded-xl bg-white p-6 shadow">
 					<h2 className="text-base font-semibold leading-7 text-gray-900">Create New Organization</h2>
-					<p className="mt-1 text-sm leading-6 text-gray-600">Create a new organization to collaborate with your team.</p>
+					<p className="mt-1 text-sm leading-6 text-gray-600">
+						Create a new organization to collaborate with your team.
+					</p>
 
 					<form onSubmit={handleSubmit} className="mt-6">
 						<div>

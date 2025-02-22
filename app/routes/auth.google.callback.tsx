@@ -23,11 +23,7 @@ export const loader = async ({ request }: { request: Request }) => {
 	}
 
 	// Check profile role and redirect accordingly
-	const { data: profile } = await supabase
-		.from('profiles')
-		.select('role')
-		.eq('id', authData.session.user.id)
-		.single();
+	const { data: profile } = await supabase.from('profiles').select('role').eq('id', authData.session.user.id).single();
 
 	// Profile will exist (created by trigger) but role will be null for new users
 	if (!profile?.role) {

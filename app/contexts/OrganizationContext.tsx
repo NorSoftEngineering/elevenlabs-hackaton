@@ -2,8 +2,8 @@ import { createBrowserClient } from '@supabase/ssr';
 import { User } from '@supabase/supabase-js';
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import type { Organization, OrganizationMember } from '~/types/organization';
-import { useRole } from './RoleContext';
 import { isInterviewerRole } from '~/types/role';
+import { useRole } from './RoleContext';
 
 type OrganizationContextType = {
 	currentOrganization: Organization | null;

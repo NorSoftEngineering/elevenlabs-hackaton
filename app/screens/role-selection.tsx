@@ -1,44 +1,40 @@
 import { createBrowserClient } from '@supabase/ssr';
-import { useLoaderData, redirect } from 'react-router';
+import { redirect, useLoaderData } from 'react-router';
+import RoleSelectionForm from '~/components/RoleSelectionForm';
 import { getSupabaseEnv } from '~/utils/env.server';
 import { createSupabaseServer } from '~/utils/supabase.server';
-import RoleSelectionForm from '~/components/RoleSelectionForm';
 
 export const headers = () => ({
-  'Cache-Control': 'no-store',
+	'Cache-Control': 'no-store',
 });
 
 export const loader = async ({ request }: { request: Request }) => {
-  const headers = new Headers();
-  const env = getSupabaseEnv();
-  const supabase = createSupabaseServer(request, headers);
+	const headers = new Headers();
+	const env = getSupabaseEnv();
+	const supabase = createSupabaseServer(request, headers);
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+	const {
+		data: { session },
+	} = await supabase.auth.getSession();
 
-  if (!session) {
-    return redirect('/login', {
-      headers,
-    });
-  }
+	if (!session) {
+		return redirect('/login', {
+			headers,
+		});
+	}
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', session.user.id)
-    .single();
+	const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
 
-  if (profile?.role) {
-    return redirect(profile.role === 'interviewer' ? '/dashboard' : '/candidate/dashboard', {
-      headers,
-    });
-  }
+	if (profile?.role) {
+		return redirect(profile.role === 'interviewer' ? '/dashboard' : '/candidate/dashboard', {
+			headers,
+		});
+	}
 
-  return { env };
+	return { env };
 };
 
 export default function RoleSelectionScreen() {
-  const { env } = useLoaderData<typeof loader>();
-  return <RoleSelectionForm />;
-} 
+	useLoaderData<typeof loader>();
+	return <RoleSelectionForm />;
+}

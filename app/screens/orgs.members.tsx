@@ -2,10 +2,10 @@ import { createBrowserClient } from '@supabase/ssr';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { useLoaderData } from 'react-router';
+import RoleGuard from '~/components/RoleGuard';
 import { useOrganization } from '~/contexts/OrganizationContext';
 import type { Organization, OrganizationMember } from '~/types/organization';
 import { getSupabaseEnv } from '~/utils/env.server';
-import RoleGuard from '~/components/RoleGuard';
 
 type MemberData = {
 	id: string;
@@ -205,7 +205,9 @@ export default function OrganizationMembers() {
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 										Email
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+										Role
+									</th>
 									<th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
 										Actions
 									</th>

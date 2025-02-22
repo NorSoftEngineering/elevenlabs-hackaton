@@ -4,10 +4,10 @@ import { Links, LinksFunction, Meta, Outlet, Scripts, ScrollRestoration, useLoad
 import Navbar from '~/components/Navbar';
 import { getSupabaseEnv } from '~/utils/env.server';
 import { createSupabaseServer } from '~/utils/supabase.server';
-import { AppLayout } from './layouts/AppLayout';
-import { RoleProvider } from './contexts/RoleContext';
-import { OrganizationProvider } from './contexts/OrganizationContext';
 import Layout from './components/Layout';
+import { OrganizationProvider } from './contexts/OrganizationContext';
+import { RoleProvider } from './contexts/RoleContext';
+import { AppLayout } from './layouts/AppLayout';
 
 import globalStyles from './styles/globals.css?url';
 import styles from './tailwind.css?url';

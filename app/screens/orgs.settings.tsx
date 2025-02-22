@@ -1,10 +1,10 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { useEffect, useState } from 'react';
 import { useLoaderData, useNavigate, useParams } from 'react-router';
+import RoleGuard from '~/components/RoleGuard';
 import { useOrganization } from '~/contexts/OrganizationContext';
 import type { Organization } from '~/types/organization';
 import { getSupabaseEnv } from '~/utils/env.server';
-import RoleGuard from '~/components/RoleGuard';
 
 export const loader = async () => {
 	return {
