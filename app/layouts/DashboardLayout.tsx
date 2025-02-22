@@ -19,9 +19,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 					<div className="flex h-16 justify-between">
 						<div className="flex justify-between w-full">
 							<div className="flex flex-shrink-0 items-center">
-                  <h1 className="text-lg font-bold text-gray-700">
-                    Manage your organization
-                  </h1>
+								<h1 className="text-lg font-bold text-gray-700">Manage your organization</h1>
 							</div>
 							{currentOrganization && (
 								<div className="ml-6 flex space-x-4 items-center">
@@ -44,10 +42,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 							<OrganizationSelector />
 							<div className="flex items-center space-x-4 ml-4 pl-4 border-l border-brand-neutral/20">
 								<span className="text-sm text-gray-700">{user?.email}</span>
-								<button
-									onClick={() => signOut()}
-									className="text-sm text-brand-accent hover:text-brand-accent/80"
-								>
+								<button onClick={() => signOut()} className="text-sm text-brand-accent hover:text-brand-accent/80">
 									Sign Out
 								</button>
 							</div>
