@@ -17,4 +17,5 @@ export default [
 		route('orgs/:slug/settings', './screens/orgs.settings.tsx'),
 		route('orgs/:slug/members', './screens/orgs.members.tsx'),
 	]),
+	route('agent', './routes/protected.agent.tsx'),
 ] satisfies RouteConfig;
