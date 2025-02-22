@@ -1,7 +1,8 @@
+import { createBrowserClient } from '@supabase/ssr';
 import { useEffect } from 'react';
 import { Links, LinksFunction, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from 'react-router';
-import { createBrowserClient } from '@supabase/ssr';
 
+import Navbar from '~/components/Navbar';
 import { createSupabaseServer } from '~/utils/supabase.server';
 
 import globalStyles from './styles/globals.css?url';
@@ -19,7 +20,9 @@ export const headers = () => ({
 export const loader = async ({ request }: { request: Request }) => {
 	const headers = new Headers();
 	const supabase = createSupabaseServer(request, headers);
-	const { data: { session } } = await supabase.auth.getSession();
+	const {
+		data: { session },
+	} = await supabase.auth.getSession();
 
 	return {
 		env: {
@@ -34,6 +37,7 @@ export const loader = async ({ request }: { request: Request }) => {
 export default function App() {
 	const { env, session } = useLoaderData<typeof loader>();
 	const supabase = createBrowserClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+	const context = { supabase, session };
 
 	useEffect(() => {
 		const {
@@ -59,7 +63,10 @@ export default function App() {
 				<Links />
 			</head>
 			<body>
-				<Outlet context={{ supabase, session }} />
+				<Navbar context={context} />
+				<main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+					<Outlet context={context} />
+				</main>
 				<ScrollRestoration />
 				<Scripts />
 			</body>

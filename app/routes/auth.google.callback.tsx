@@ -2,23 +2,23 @@ import { redirect } from 'react-router';
 import { createSupabaseServer } from '~/utils/supabase.server';
 
 export const headers = () => ({
-  'Cache-Control': 'no-store',
+	'Cache-Control': 'no-store',
 });
 
 export const loader = async ({ request }: { request: Request }) => {
-  const headers = new Headers();
-  const supabase = createSupabaseServer(request, headers);
-  const url = new URL(request.url);
+	const headers = new Headers();
+	const supabase = createSupabaseServer(request, headers);
+	const url = new URL(request.url);
 
-  const code = url.searchParams.get('code');
-  
-  if (!code) {
-    return redirect('/login');
-  }
+	const code = url.searchParams.get('code');
 
-  await supabase.auth.exchangeCodeForSession(code);
+	if (!code) {
+		return redirect('/login');
+	}
 
-  return redirect('/', {
-    headers,
-  });
-}; 
+	await supabase.auth.exchangeCodeForSession(code);
+
+	return redirect('/', {
+		headers,
+	});
+};
