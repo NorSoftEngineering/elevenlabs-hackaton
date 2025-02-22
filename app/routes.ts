@@ -5,16 +5,23 @@ export default [
 	index('./screens/home.tsx'),
 	route('login', './screens/login.tsx'),
 	route('auth/google/callback', './routes/auth.google.callback.tsx'),
+	// Role selection ()
+	route('role-selection', './screens/role-selection.tsx'),
 
-	// Protected dashboard routes
-	route('dashboard', './routes/protected.tsx', [
+	// Protected dashboard routes (for interviewers)
+	route('dashboard', './routes/protected.interviewer.tsx', [
 		index('./screens/dashboard.tsx'),
-		route('edge', './screens/edge.tsx'),
-		route('edgestream', './screens/edgestream.tsx'),
-		route('node', './screens/node.tsx'),
-		route('nodestream', './screens/nodestream.tsx'),
 		route('orgs/new', './screens/orgs.new.tsx'),
 		route('orgs/:slug/settings', './screens/orgs.settings.tsx'),
 		route('orgs/:slug/members', './screens/orgs.members.tsx'),
+	]),
+
+	// Candidate routes
+	route('candidate', './routes/protected.candidate.tsx', [
+		route('dashboard', './screens/candidate/dashboard.tsx'),
+		// route('interviews', './screens/candidate/interviews.tsx'),
+		// route('profile', './screens/candidate/profile.tsx'),
+		// route('profile/edit', './screens/candidate/profile.edit.tsx'),
+		// route('interviews/:id', './screens/candidate/interview.tsx'),
 	]),
 ] satisfies RouteConfig;

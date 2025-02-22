@@ -5,6 +5,9 @@ import Navbar from '~/components/Navbar';
 import { getSupabaseEnv } from '~/utils/env.server';
 import { createSupabaseServer } from '~/utils/supabase.server';
 import { AppLayout } from './layouts/AppLayout';
+import { RoleProvider } from './contexts/RoleContext';
+import { OrganizationProvider } from './contexts/OrganizationContext';
+import Layout from './components/Layout';
 
 import globalStyles from './styles/globals.css?url';
 import styles from './tailwind.css?url';
@@ -35,7 +38,6 @@ export const loader = async ({ request }: { request: Request }) => {
 export default function App() {
 	const { env, session } = useLoaderData<typeof loader>();
 	const supabase = createBrowserClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
-	const context = { supabase, session };
 
 	return (
 		<html lang="en">
@@ -44,14 +46,16 @@ export default function App() {
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
 				<Meta />
 				<Links />
+				<title>TalentBud</title>
 			</head>
 			<body>
-				<Navbar context={context} />
-				<main className="">
-					<AppLayout env={env}>
-						<Outlet context={context} />
-					</AppLayout>
-				</main>
+				<RoleProvider env={env}>
+					<OrganizationProvider env={env}>
+						<Layout>
+							<Outlet context={{ supabase, session }} />
+						</Layout>
+					</OrganizationProvider>
+				</RoleProvider>
 				<ScrollRestoration />
 				<Scripts />
 			</body>
