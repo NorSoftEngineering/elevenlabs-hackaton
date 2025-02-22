@@ -16,7 +16,7 @@ export default function Navbar({ context: { session, supabase } }: NavbarProps) 
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				<div className="flex h-16 justify-between">
 					<div className="flex">
-						<Link to="/" className="flex items-center text-xl font-bold text-gray-800">
+						<Link to="/" className="flex items-center text-xl font-bold text-brand-primary">
 							TalentBud
 						</Link>
 					</div>
@@ -27,7 +27,7 @@ export default function Navbar({ context: { session, supabase } }: NavbarProps) 
 								<button
 									onClick={handleSignOut}
 									type="button"
-									className="rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+									className="rounded-md bg-brand-neutral px-3 py-2 text-sm font-medium text-gray-700 hover:bg-brand-neutral/80"
 								>
 									Sign out
 								</button>
@@ -35,7 +35,7 @@ export default function Navbar({ context: { session, supabase } }: NavbarProps) 
 						) : (
 							<Link
 								to="/login"
-								className="rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+								className="rounded-md bg-brand-neutral px-3 py-2 text-sm font-medium text-gray-700 hover:bg-brand-neutral/80"
 							>
 								Sign in
 							</Link>

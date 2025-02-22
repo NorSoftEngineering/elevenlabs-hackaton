@@ -15,18 +15,18 @@ const BookCard: FC<Book> = ({
 	<div
 		data-testid={`${BOOK_CARD_TEST_IDS.BOOK_CARD_CONTAINER}-${isbn}`}
 		id={isbn}
-		className=" my-10 flex w-full flex-col items-center justify-center rounded-lg border border-gray-200 bg-white p-6 text-center shadow-md hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
+		className="my-10 flex w-full flex-col items-center justify-center rounded-lg border border-brand-secondary bg-white p-6 text-center shadow-md hover:bg-brand-neutral/5"
 	>
-		<h2 data-testid={`${BOOK_CARD_TEST_IDS.BOOK_CARD_TITLE}-${isbn}`} className="mb-5 text-xl font-bold text-white">
+		<h2 data-testid={`${BOOK_CARD_TEST_IDS.BOOK_CARD_TITLE}-${isbn}`} className="mb-5 text-xl font-bold text-gray-900">
 			{title}
 		</h2>
 		{shortDescription && (
-			<p data-testid={`${BOOK_CARD_TEST_IDS.BOOK_CARD_SHORT_DESCRIPTION}-${isbn}`} className="text-white">
+			<p data-testid={`${BOOK_CARD_TEST_IDS.BOOK_CARD_SHORT_DESCRIPTION}-${isbn}`} className="text-gray-700">
 				{shortDescription}
 			</p>
 		)}
 		{longDescription && (
-			<p data-testid={`${BOOK_CARD_TEST_IDS.BOOK_CARD_LONG_DESCRIPTION}-${isbn}`} className="text-white">
+			<p data-testid={`${BOOK_CARD_TEST_IDS.BOOK_CARD_LONG_DESCRIPTION}-${isbn}`} className="text-gray-700">
 				{longDescription}
 			</p>
 		)}
@@ -39,7 +39,7 @@ const BookCard: FC<Book> = ({
 			/>
 		)}
 		{authors.map(author => (
-			<p key={author} data-testid={`${BOOK_CARD_TEST_IDS.BOOK_CARD_AUTHOR}-${isbn}`} className="text-sm text-white">
+			<p key={author} data-testid={`${BOOK_CARD_TEST_IDS.BOOK_CARD_AUTHOR}-${isbn}`} className="text-sm text-gray-600">
 				{author}
 			</p>
 		))}

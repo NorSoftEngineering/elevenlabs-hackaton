@@ -13,5 +13,8 @@ export default [
 		route('edgestream', './screens/edgestream.tsx'),
 		route('node', './screens/node.tsx'),
 		route('nodestream', './screens/nodestream.tsx'),
+		route('orgs/new', './screens/orgs.new.tsx'),
+		route('orgs/:slug/settings', './screens/orgs.settings.tsx'),
+		route('orgs/:slug/members', './screens/orgs.members.tsx'),
 	]),
 ] satisfies RouteConfig;

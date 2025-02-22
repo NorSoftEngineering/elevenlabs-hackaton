@@ -18,7 +18,7 @@ export const loader = async ({ request }: { request: Request }) => {
 
 	await supabase.auth.exchangeCodeForSession(code);
 
-	return redirect('/', {
+	return redirect('/dashboard', {
 		headers,
 	});
 };

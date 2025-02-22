@@ -19,6 +19,8 @@
 		"test:coverage": "vitest run --coverage"
 	},
 	"dependencies": {
+		"@headlessui/react": "^2.2.0",
+		"@heroicons/react": "^2.2.0",
 		"@react-router/node": "^7.2.0",
 		"@supabase/ssr": "^0.5.2",
 		"@supabase/supabase-js": "^2.48.1",

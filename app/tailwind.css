@@ -1,5 +1,12 @@
 @import 'tailwindcss';
 
+@theme {
+  --color-brand-primary: #4A90E2;
+  --color-brand-secondary: #7FB3FF;
+  --color-brand-neutral: #C7E0FF;
+  --color-brand-accent: #FFD166;
+}
+
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still
@@ -9,11 +16,33 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
+  body {
+    @apply bg-white text-gray-900;
+  }
+
   *,
   ::after,
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: var(--brand-secondary);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-brand-primary/90 transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-brand-secondary text-gray-900 px-4 py-2 rounded-lg hover:bg-brand-secondary/90 transition-colors;
+  }
+
+  .card {
+    @apply bg-white border border-brand-secondary rounded-lg p-4 shadow-sm;
+  }
+
+  .input {
+    @apply border border-brand-secondary rounded-md px-3 py-2 focus:ring-2 focus:ring-brand-primary/50 focus:outline-none;
   }
 }

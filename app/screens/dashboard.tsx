@@ -7,7 +7,7 @@ export default function DashboardScreen() {
 				<div className="bg-white overflow-hidden shadow rounded-lg">
 					<div className="p-5">
 						<div className="flex items-center">
-							<div className="flex-shrink-0 bg-indigo-500 rounded-md p-3">
+							<div className="flex-shrink-0 bg-brand-primary rounded-md p-3">
 								<svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 									<path
 										strokeLinecap="round"
@@ -30,8 +30,8 @@ export default function DashboardScreen() {
 							</div>
 						</div>
 					</div>
-					<div className="bg-gray-50 px-5 py-3">
-						<Link to="/interviews" className="text-sm font-medium text-indigo-700 hover:text-indigo-900">
+					<div className="bg-brand-neutral/10 px-5 py-3">
+						<Link to="/interviews" className="text-sm font-medium text-brand-primary hover:text-brand-primary/80">
 							View candidates
 						</Link>
 					</div>
@@ -40,7 +40,7 @@ export default function DashboardScreen() {
 				<div className="bg-white overflow-hidden shadow rounded-lg">
 					<div className="p-5">
 						<div className="flex items-center">
-							<div className="flex-shrink-0 bg-green-500 rounded-md p-3">
+							<div className="flex-shrink-0 bg-brand-primary rounded-md p-3">
 								<svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 									<path
 										strokeLinecap="round"
@@ -63,8 +63,8 @@ export default function DashboardScreen() {
 							</div>
 						</div>
 					</div>
-					<div className="bg-gray-50 px-5 py-3">
-						<Link to="/analytics" className="text-sm font-medium text-indigo-700 hover:text-indigo-900">
+					<div className="bg-brand-neutral/10 px-5 py-3">
+						<Link to="/analytics" className="text-sm font-medium text-brand-primary hover:text-brand-primary/80">
 							View analytics
 						</Link>
 					</div>
@@ -73,7 +73,7 @@ export default function DashboardScreen() {
 				<div className="bg-white overflow-hidden shadow rounded-lg">
 					<div className="p-5">
 						<div className="flex items-center">
-							<div className="flex-shrink-0 bg-purple-500 rounded-md p-3">
+							<div className="flex-shrink-0 bg-brand-primary rounded-md p-3">
 								<svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 									<path
 										strokeLinecap="round"
@@ -96,8 +96,8 @@ export default function DashboardScreen() {
 							</div>
 						</div>
 					</div>
-					<div className="bg-gray-50 px-5 py-3">
-						<Link to="/performance" className="text-sm font-medium text-indigo-700 hover:text-indigo-900">
+					<div className="bg-brand-neutral/10 px-5 py-3">
+						<Link to="/performance" className="text-sm font-medium text-brand-primary hover:text-brand-primary/80">
 							View metrics
 						</Link>
 					</div>
@@ -113,7 +113,7 @@ export default function DashboardScreen() {
 								<li className="relative pb-8">
 									<div className="relative flex space-x-3">
 										<div>
-											<span className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center ring-8 ring-white">
+											<span className="h-8 w-8 rounded-full bg-brand-primary flex items-center justify-center ring-8 ring-white">
 												<svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
 												</svg>
@@ -135,7 +135,7 @@ export default function DashboardScreen() {
 								<li className="relative pb-8">
 									<div className="relative flex space-x-3">
 										<div>
-											<span className="h-8 w-8 rounded-full bg-yellow-500 flex items-center justify-center ring-8 ring-white">
+											<span className="h-8 w-8 rounded-full bg-brand-accent flex items-center justify-center ring-8 ring-white">
 												<svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 													<path
 														strokeLinecap="round"
