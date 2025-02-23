@@ -55,10 +55,10 @@ export default function InterviewScreen() {
 		<div className="p-6 max-w-4xl mx-auto">
 			<div className="flex justify-between items-center mb-6">
 				<div>
-					<Link to="/candidate/interviews" className="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+					<Link to="/candidate/interviews" className="text-gray-600 hover:text-gray-800 mb-2 inline-block">
 						← Back to Interviews
 					</Link>
-					<h1 className="text-2xl font-bold">
+					<h1 className="text-2xl font-bold text-gray-700">
 						{interview.position} at {interview.companyName}
 					</h1>
 				</div>
@@ -78,12 +78,12 @@ export default function InterviewScreen() {
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
 							<section className="mb-6">
-								<h2 className="text-lg font-semibold mb-3">Interview Details</h2>
+								<h2 className="text-lg font-semibold text-gray-700 mb-3">Interview Details</h2>
 								<div className="space-y-2">
-									<p>
+									<p className="text-gray-700">
 										<span className="text-gray-600">Date:</span> {new Date(interview.date).toLocaleString()}
 									</p>
-									<p>
+									<p className="text-gray-700">
 										<span className="text-gray-600">Location:</span>{' '}
 										{interview.location.type === 'remote' ? '🌐 Remote' : '🏢 On-site'}
 									</p>
@@ -92,12 +92,12 @@ export default function InterviewScreen() {
 							</section>
 
 							<section className="mb-6">
-								<h2 className="text-lg font-semibold mb-3">Interviewer</h2>
+								<h2 className="text-lg font-semibold text-gray-700 mb-3">Interviewer</h2>
 								<div className="space-y-2">
-									<p>{interview.interviewer.name}</p>
+									<p className="text-gray-700">{interview.interviewer.name}</p>
 									<p className="text-gray-600">{interview.interviewer.title}</p>
 									<p className="text-sm">
-										<a href={`mailto:${interview.interviewer.email}`} className="text-blue-600 hover:text-blue-800">
+										<a href={`mailto:${interview.interviewer.email}`} className="text-gray-600 hover:text-gray-800">
 											{interview.interviewer.email}
 										</a>
 									</p>
@@ -107,12 +107,12 @@ export default function InterviewScreen() {
 
 						<div>
 							<section className="mb-6">
-								<h2 className="text-lg font-semibold mb-3">Agenda</h2>
+								<h2 className="text-lg font-semibold text-gray-700 mb-3">Agenda</h2>
 								<div className="space-y-2">
 									{interview.agenda.map((item, index) => (
 										<div key={index} className="flex items-start py-2 border-b border-gray-100 last:border-0">
 											<span className="text-gray-600 w-20">{item.time}</span>
-											<span>{item.activity}</span>
+											<span className="text-gray-700">{item.activity}</span>
 										</div>
 									))}
 								</div>
@@ -120,7 +120,7 @@ export default function InterviewScreen() {
 
 							{interview.notes && (
 								<section>
-									<h2 className="text-lg font-semibold mb-3">Additional Notes</h2>
+									<h2 className="text-lg font-semibold text-gray-700 mb-3">Additional Notes</h2>
 									<p className="text-gray-700 whitespace-pre-line">{interview.notes}</p>
 								</section>
 							)}

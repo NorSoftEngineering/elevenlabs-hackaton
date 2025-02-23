@@ -2,6 +2,7 @@ import { type ActionFunctionArgs, type LoaderFunctionArgs, redirect } from 'reac
 import { Form, useActionData, useLoaderData, useNavigation } from 'react-router';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { createSupabaseServer } from '~/utils/supabase.server';
+import { useState, useRef } from 'react';
 
 export { ErrorBoundary };
 
@@ -46,20 +47,66 @@ export async function action({ request }: ActionFunctionArgs) {
 		throw new Error('Not authenticated');
 	}
 
+	// Handle resume upload if present
+	const resumeFile = formData.get('resume') as File;
+	let resumeData = null;
+	
+	if (resumeFile && resumeFile.size > 0) {
+		// Validate file type
+		if (resumeFile.type !== 'application/pdf') {
+			return { error: 'Only PDF files are allowed' };
+		}
+
+		// Validate file size (5MB)
+		if (resumeFile.size > 5 * 1024 * 1024) {
+			return { error: 'File size must be less than 5MB' };
+		}
+
+		try {
+			// Create a unique filename
+			const timestamp = new Date().getTime();
+			const fileName = `${session.user.id}/${timestamp}-resume.pdf`;
+
+			// Upload file
+			const { error: uploadError } = await supabase.storage
+				.from('resumes')
+				.upload(fileName, resumeFile, {
+					cacheControl: '3600',
+					upsert: true,
+				});
+
+			if (uploadError) {
+				console.error('Failed to upload resume', uploadError);
+				return { error: 'Failed to upload resume' };
+			}
+
+			// Get the public URL
+			const { data: { publicUrl } } = supabase.storage
+				.from('resumes')
+				.getPublicUrl(fileName);
+
+			resumeData = {
+				url: publicUrl,
+				filename: resumeFile.name,
+			};
+		} catch (error) {
+			console.error('Failed to handle resume upload', error);
+			return { error: 'Failed to upload resume' };
+		}
+	}
+
 	const updates = {
 		name: formData.get('name'),
 		phone: formData.get('phone'),
 		title: formData.get('title'),
 		experience_years: parseInt(formData.get('experience_years') as string) || null,
-		skills:
-			formData
-				.get('skills')
-				?.toString()
-				.split(',')
-				.map(s => s.trim())
-				.filter(Boolean) || [],
+		skills: formData.get('skills')?.toString().split(',').map(s => s.trim()).filter(Boolean) || [],
 		bio: formData.get('bio'),
 		location: formData.get('location'),
+		...(resumeData && {
+			resume_url: resumeData.url,
+			resume_filename: resumeData.filename,
+		}),
 	};
 
 	// Validate required fields
@@ -120,6 +167,119 @@ function LoadingProfile() {
 	);
 }
 
+function FileUpload({ currentResume }: { currentResume?: { url: string; filename: string } }) {
+	const [dragActive, setDragActive] = useState(false);
+	const [selectedFile, setSelectedFile] = useState<File | null>(null);
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	const handleDrag = (e: React.DragEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		if (e.type === "dragenter" || e.type === "dragover") {
+			setDragActive(true);
+		} else if (e.type === "dragleave") {
+			setDragActive(false);
+		}
+	};
+
+	const handleFile = (file: File) => {
+		if (file.type === 'application/pdf') {
+			setSelectedFile(file);
+			if (inputRef.current) {
+				const dataTransfer = new DataTransfer();
+				dataTransfer.items.add(file);
+				inputRef.current.files = dataTransfer.files;
+			}
+		}
+	};
+
+	const handleDrop = (e: React.DragEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setDragActive(false);
+
+		if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+			handleFile(e.dataTransfer.files[0]);
+		}
+	};
+
+	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (e.target.files && e.target.files[0]) {
+			handleFile(e.target.files[0]);
+		}
+	};
+
+	return (
+		<div className="mt-6">
+			<label className="block text-sm font-medium text-gray-700 mb-1">Resume</label>
+			<div 
+				className={`relative border-2 border-dashed rounded-lg p-6 transition-colors
+					${dragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
+				`}
+				onDragEnter={handleDrag}
+				onDragLeave={handleDrag}
+				onDragOver={handleDrag}
+				onDrop={handleDrop}
+			>
+				<input
+					ref={inputRef}
+					type="file"
+					name="resume"
+					accept=".pdf"
+					className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+					onChange={handleChange}
+				/>
+				
+				<div className="text-center">
+					{selectedFile || currentResume ? (
+						<div className="space-y-2">
+							<div className="w-12 h-12 mx-auto bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+								<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+								</svg>
+							</div>
+							<div>
+								{selectedFile ? (
+									<span className="text-sm text-gray-900 font-medium">
+										{selectedFile.name}
+									</span>
+								) : currentResume && (
+									<a 
+										href={currentResume.url}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+									>
+										{currentResume.filename}
+									</a>
+								)}
+								<p className="text-xs text-gray-500 mt-1">
+									Click or drag to replace
+								</p>
+							</div>
+						</div>
+					) : (
+						<div className="space-y-2">
+							<div className="w-12 h-12 mx-auto bg-gray-100 text-gray-400 rounded-full flex items-center justify-center">
+								<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+								</svg>
+							</div>
+							<div className="mt-2">
+								<span className="text-sm text-gray-600">
+									Drop your resume here or{' '}
+									<span className="text-blue-600 hover:text-blue-800 cursor-pointer">browse</span>
+								</span>
+								<p className="text-xs text-gray-500 mt-1">PDF only, max 5MB</p>
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
+		</div>
+	);
+}
+
 export default function ProfileEditScreen() {
 	const { profile } = useLoaderData<typeof loader>();
 	const navigation = useNavigation();
@@ -129,6 +289,11 @@ export default function ProfileEditScreen() {
 	if (navigation.state === 'loading') {
 		return <LoadingProfile />;
 	}
+
+	const currentResume = profile.resume_url ? {
+		url: profile.resume_url,
+		filename: profile.resume_filename,
+	} : undefined;
 
 	return (
 		<div className="p-6 max-w-4xl mx-auto">
@@ -140,7 +305,7 @@ export default function ProfileEditScreen() {
 				<div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">{actionData.error}</div>
 			)}
 
-			<Form method="post" className="bg-white rounded-lg shadow overflow-hidden">
+			<Form method="post" className="bg-white rounded-lg shadow overflow-hidden" encType="multipart/form-data">
 				<div className="p-6">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div className="space-y-4">
@@ -221,6 +386,8 @@ export default function ProfileEditScreen() {
 							rows={4}
 						/>
 					</div>
+
+					<FileUpload currentResume={currentResume} />
 
 					<div className="mt-6 flex justify-end space-x-3">
 						<button

@@ -9,6 +9,8 @@ CREATE TABLE candidate_profiles (
     skills TEXT[] DEFAULT '{}',
     bio TEXT,
     location TEXT,
+    resume_url TEXT,
+    resume_filename TEXT,
     created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
     CONSTRAINT unique_profile UNIQUE(profile_id)
@@ -34,6 +36,39 @@ CREATE POLICY "Users can update own candidate profile" ON candidate_profiles
     USING (auth.uid() IN (
         SELECT id FROM profiles WHERE id = profile_id
     ));
+
+-- Create resumes bucket
+INSERT INTO storage.buckets (id, name, public) VALUES ('resumes', 'resumes', false);
+
+-- Storage policies for resumes bucket
+CREATE POLICY "Users can upload their own resume"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (
+    bucket_id = 'resumes' AND
+    (storage.foldername(name))[1] = auth.uid()::text AND
+    LOWER(storage.extension(name)) = '.pdf'
+);
+
+CREATE POLICY "Users can update their own resume"
+ON storage.objects FOR UPDATE TO authenticated
+USING (
+    bucket_id = 'resumes' AND
+    (storage.foldername(name))[1] = auth.uid()::text
+);
+
+CREATE POLICY "Users can delete their own resume"
+ON storage.objects FOR DELETE TO authenticated
+USING (
+    bucket_id = 'resumes' AND
+    (storage.foldername(name))[1] = auth.uid()::text
+);
+
+CREATE POLICY "Users can read their own resume"
+ON storage.objects FOR SELECT TO authenticated
+USING (
+    bucket_id = 'resumes' AND
+    (storage.foldername(name))[1] = auth.uid()::text
+);
 
 -- Function to automatically update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()

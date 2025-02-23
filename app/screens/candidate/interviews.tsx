@@ -24,7 +24,7 @@ export default function InterviewsScreen() {
 
 	return (
 		<div className="p-6">
-			<h1 className="text-2xl font-bold mb-6">My Interviews</h1>
+			<h1 className="text-2xl font-bold mb-6 text-brand-primary">My Interviews</h1>
 
 			<div className="bg-white rounded-lg shadow overflow-hidden">
 				<table className="min-w-full divide-y divide-gray-200">
