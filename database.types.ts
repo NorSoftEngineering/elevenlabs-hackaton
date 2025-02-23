@@ -221,6 +221,7 @@ export type Database = {
 					name: string;
 					organization_id: string;
 					start_at: string | null;
+					started_date: string | null;
 					status: Database['public']['Enums']['interview_status'];
 					updated_at: string;
 				};
@@ -237,6 +238,7 @@ export type Database = {
 					name: string;
 					organization_id: string;
 					start_at?: string | null;
+					started_date?: string | null;
 					status?: Database['public']['Enums']['interview_status'];
 					updated_at?: string;
 				};
@@ -253,6 +255,7 @@ export type Database = {
 					name?: string;
 					organization_id?: string;
 					start_at?: string | null;
+					started_date?: string | null;
 					status?: Database['public']['Enums']['interview_status'];
 					updated_at?: string;
 				};
