@@ -1,30 +1,8 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
-import { redirect, Form, useActionData, useLoaderData, useNavigation } from 'react-router';
 import { useEffect } from 'react';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import { Form, redirect, useActionData, useLoaderData, useNavigation } from 'react-router';
 import { toast } from 'sonner';
 import { createSupabaseServer } from '~/utils/supabase.server';
-
-interface LoaderData {
-	invitation: {
-		invitation_id: string;
-		interview_id: string;
-		email: string;
-		status: string;
-		is_expired: boolean;
-	};
-	interview: {
-		name: string;
-		description: string;
-		organization_id: string;
-	};
-	isAuthenticated: boolean;
-	userEmail: string | undefined;
-}
-
-interface ActionData {
-	error?: string;
-	success?: boolean;
-}
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const headers = new Headers();
@@ -157,9 +135,7 @@ export default function JoinInterviewPage() {
 		<div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
 			<div className="sm:mx-auto sm:w-full sm:max-w-md">
 				<h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Join Interview</h2>
-				<p className="mt-2 text-center text-sm text-gray-600">
-					You've been invited to join {interview.name} interview
-				</p>
+				<p className="mt-2 text-center text-sm text-gray-600">You've been invited to join {interview.name} interview</p>
 			</div>
 
 			<div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -188,10 +164,7 @@ export default function JoinInterviewPage() {
 					) : (
 						<div className="space-y-6">
 							<div className="flex items-center justify-center">
-								<a
-									href="/login"
-									className="text-sm font-medium text-blue-600 hover:text-blue-500"
-								>
+								<a href="/login" className="text-sm font-medium text-blue-600 hover:text-blue-500">
 									Sign In with Google
 								</a>
 							</div>
@@ -201,4 +174,4 @@ export default function JoinInterviewPage() {
 			</div>
 		</div>
 	);
-} 
+}
