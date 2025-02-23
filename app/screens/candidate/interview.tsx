@@ -102,11 +102,11 @@ const CHECKPOINTS = [
 const AGENTS = [
 	{
 		agent_id: 'Zpp6J4Xq3NpEhs266fpy',
-		name: 'Hope Female American',
+		name: 'Nova - Professional Guide',
 	},
 	{
 		agent_id: 'ybrNX1zWwwqwgMAGc0lm',
-		name: 'Eric Male Laidback American',
+		name: 'Echo - Friendly Assistant',
 	},
 ];
 
@@ -130,7 +130,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	const [interviewsPromise, profilePromise] = await Promise.all([
 		supabase
 			.from('interviews')
-			.select('messages, started_date, deadline, status, name, interview_checkpoints(*)')
+			.select('id, messages, started_date, deadline, status, name, interview_checkpoints(*)')
 			.eq('id', interviewId)
 			.single(),
 		supabase.from('candidate_profiles').select('name').eq('profile_id', sessionData.session?.user.id).single(),
@@ -270,11 +270,16 @@ export async function action({ request }: ActionFunctionArgs) {
 		}
 
 		case 'saveMessage': {
-			const message = formData.get('message');
+			const messageId = formData.get('id') as string;
+			const message = formData.get('message') as string;
 			const source = normalizeMessageSource(formData.get('source') as string);
-			const timestamp = formData.get('timestamp');
-			const messageId = formData.get('id');
+			const timestamp = formData.get('timestamp') as string;
 			const checkpointId = Number(formData.get('checkpointId')) || 1;
+
+			// Validate UUID before proceeding
+			if (!messageId || messageId.trim() === '') {
+				throw new Response('Invalid message ID', { status: 400 });
+			}
 
 			// First save the message
 			const { data: messages, error } = await supabase.rpc('append_interview_message', {
@@ -288,7 +293,7 @@ export async function action({ request }: ActionFunctionArgs) {
 			});
 
 			if (error) {
-				console.error('Failed to save message:', error);
+				console.error('Supabase error:', error); // Debug log
 				throw new Response('Failed to save message', { status: 500 });
 			}
 
@@ -437,15 +442,18 @@ export default function AgentRoute() {
 		const formData = new FormData();
 		formData.append('intent', 'saveMessage');
 		formData.append('interviewId', interview?.id || '');
-		formData.append('id', message.id);
+		// Ensure we have a valid UUID
+		const messageId = message.id || crypto.randomUUID();
+
+		formData.append('id', messageId);
 		formData.append('message', message.text);
 		formData.append('source', message.source);
 		formData.append('timestamp', message.timestamp.toString());
 		formData.append('checkpointId', currentCheckpoint.toString());
 
 		try {
-			// Optimistically add the message to the UI
-			setMessages(prev => [...prev, message]);
+			// Optimistically add the message to the UI with the validated UUID
+			setMessages(prev => [...prev, { ...message, id: messageId }]);
 
 			// Submit the form and let the loader handle the response
 			submit(formData, { method: 'post' });
@@ -453,7 +461,7 @@ export default function AgentRoute() {
 			console.error('Failed to save message:', err);
 			setError('Failed to save message');
 			// Remove the optimistically added message on error
-			setMessages(prev => prev.filter(m => m.id !== message.id));
+			setMessages(prev => prev.filter(m => m.id !== messageId));
 		}
 	};
 
