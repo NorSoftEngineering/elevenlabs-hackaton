@@ -86,9 +86,7 @@ export default function Navigation({ context }: { context: { session: Session; s
 								<div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100">
 									<div className="px-4 py-3">
 										<p className="text-sm">Signed in as</p>
-										<p className="text-sm font-medium text-gray-900 truncate">
-											{context.session.user.email}
-										</p>
+										<p className="text-sm font-medium text-gray-900 truncate">{context.session.user.email}</p>
 									</div>
 									<div className="py-1" role="menu">
 										<Form action="/auth/signout" method="POST">
