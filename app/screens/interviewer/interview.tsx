@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router';
 import {
 	type ActionFunctionArgs,
@@ -7,10 +8,14 @@ import {
 	useLoaderData,
 	useNavigation,
 	useSubmit,
+	useActionData,
+	useNavigate,
 } from 'react-router';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
+import { InterviewSchedule } from '~/components/InterviewSchedule';
 import { type InterviewWithRelations } from '~/types';
 import { createSupabaseServer } from '~/utils/supabase.server';
+import { toast } from "sonner"
 
 export { ErrorBoundary };
 
@@ -108,8 +113,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
 				.eq('id', params.id)
 				.eq('organization_id', orgMember.organization_id);
 
-			if (error) throw new Error('Failed to update status');
-			break;
+			if (error) {
+				return { error: 'Failed to update status', success: false, action } as const;
+			}
+			return { success: true, action } as const;
 		}
 
 		case 'delete': {
@@ -119,15 +126,34 @@ export async function action({ request, params }: ActionFunctionArgs) {
 				.eq('id', params.id)
 				.eq('organization_id', orgMember.organization_id);
 
-			if (error) throw new Error('Failed to delete interview');
-			return redirect('/dashboard/interviews');
+			if (error) {
+				return { error: 'Failed to delete interview', success: false, action } as const;
+			}
+			return { success: true, action } as const;
+		}
+
+		case 'schedule': {
+			const date = formData.get('date')?.toString();
+			const time = formData.get('time')?.toString();
+			if (!date || !time) throw new Error('Date and time are required');
+
+			const startAt = new Date(`${date}T${time}`).toISOString();
+
+			const { error } = await supabase
+				.from('interviews')
+				.update({ start_at: startAt, status: 'scheduled' })
+				.eq('id', params.id)
+				.eq('organization_id', orgMember.organization_id);
+
+			if (error) {
+				return { error: 'Failed to schedule interview', success: false, action } as const;
+			}
+			return { success: true, action } as const;
 		}
 
 		default:
 			throw new Error('Invalid action');
 	}
-
-	return null;
 }
 
 function LoadingState() {
@@ -365,6 +391,27 @@ export default function InterviewScreen() {
 	const { interview, role } = useLoaderData<typeof loader>();
 	const navigation = useNavigation();
 	const submit = useSubmit();
+	const actionData = useActionData<typeof action>();
+	const navigate = useNavigate();
+
+	React.useEffect(() => {
+		if (actionData?.success) {
+			switch (actionData.action) {
+				case 'update_status':
+					toast.success("Interview status has been updated");
+					break;
+				case 'delete':
+					toast.success("Interview has been deleted");
+					navigate('/dashboard/interviews');
+					break;
+				case 'schedule':
+					toast.success("Interview has been scheduled");
+					break;
+			}
+		} else if (actionData?.error) {
+			toast.error(actionData.error);
+		}
+	}, [actionData, navigate]);
 
 	if (navigation.state === 'loading') {
 		return <LoadingState />;
@@ -375,6 +422,15 @@ export default function InterviewScreen() {
 		const formData = new FormData();
 		formData.set('action', 'update_status');
 		formData.set('status', status);
+		submit(formData, { method: 'post' });
+	};
+
+	const handleSchedule = (dateTime: string) => {
+		const [date, time] = dateTime.split('T');
+		const formData = new FormData();
+		formData.set('action', 'schedule');
+		formData.set('date', date);
+		formData.set('time', time);
 		submit(formData, { method: 'post' });
 	};
 
@@ -413,16 +469,7 @@ export default function InterviewScreen() {
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
 							<section className="mb-6">
-								<h2 className="text-lg font-semibold text-gray-700 mb-3">Interview Details</h2>
-								<div className="space-y-2">
-									<p className="text-gray-700">
-										<span className="text-gray-600">Date:</span>{' '}
-										{interview.start_at ? new Date(interview.start_at).toLocaleString() : 'Not scheduled'}
-									</p>
-									<p className="text-gray-700">
-										<span className="text-gray-600">Duration:</span> {interview.duration}
-									</p>
-								</div>
+								<InterviewSchedule interview={interview} canEdit={canManage} onSchedule={handleSchedule} />
 							</section>
 
 							<section className="mb-6">

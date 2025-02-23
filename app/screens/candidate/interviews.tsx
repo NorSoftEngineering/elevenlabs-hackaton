@@ -1,8 +1,20 @@
 import { Link } from 'react-router';
-import { type ActionFunctionArgs, Form, type LoaderFunctionArgs, useLoaderData, useNavigation } from 'react-router';
+import {
+	type ActionFunctionArgs,
+	Form,
+	type LoaderFunctionArgs,
+	useFetcher,
+	useLoaderData,
+	useNavigation,
+	useSubmit,
+	useActionData,
+} from 'react-router';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
+import { InterviewSchedule } from '~/components/InterviewSchedule';
 import { type InterviewWithRelations } from '~/types';
 import { createSupabaseServer } from '~/utils/supabase.server';
+import { toast } from "sonner"
+import React from 'react';
 
 export { ErrorBoundary };
 
@@ -24,6 +36,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		.from('candidate_invitations')
 		.select('*')
 		.eq('status', 'pending')
+		.eq('email', session.user.email)
 		.order('invited_at', { ascending: false })
 		.limit(10);
 
@@ -33,7 +46,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	}
 
 	// Get accepted interviews
-	const { data: acceptedInterviews, error: acceptedError } = await supabase.from('candidate_interviews').select('*');
+	const { data: acceptedInterviews, error: acceptedError } = await supabase
+		.from('candidate_interviews')
+		.select('*')
+		.eq('candidate_id', session.user.id);
 
 	if (acceptedError) {
 		throw new Error('Failed to load accepted interviews');
@@ -43,7 +59,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const { data: declinedInvitations, error: declinedError } = await supabase
 		.from('candidate_invitations')
 		.select('*')
-		.eq('status', 'declined');
+		.eq('status', 'declined')
+		.eq('email', session.user.email);
 
 	if (declinedError) {
 		throw new Error('Failed to load declined invitations');
@@ -80,14 +97,14 @@ export async function action({ request }: ActionFunctionArgs) {
 		case 'accept': {
 			// Get the invitation first to get the interview_id
 			const { data: invitation, error: invitationError } = await supabase
-				.from('interviews_invitations')
+				.from('candidate_invitations')
 				.select('interview_id')
 				.eq('id', invitationId)
 				.eq('email', session.user.email)
 				.single();
 
 			if (invitationError || !invitation) {
-				throw new Error('Failed to get invitation');
+				return { error: 'Failed to get invitation', success: false, action } as const;
 			}
 
 			// Start a transaction by using .rpc()
@@ -96,26 +113,80 @@ export async function action({ request }: ActionFunctionArgs) {
 				p_candidate_id: session.user.id,
 			});
 
-			if (acceptError) throw new Error('Failed to accept invitation');
-			break;
+			if (acceptError) {
+				return { error: 'Failed to accept invitation', success: false, action } as const;
+			}
+
+			return { success: true, action } as const;
 		}
 
 		case 'decline': {
 			const { error } = await supabase
-				.from('interviews_invitations')
+				.from('candidate_invitations')
 				.update({ status: 'declined', responded_at: new Date().toISOString() })
 				.eq('id', invitationId)
 				.eq('email', session.user.email);
 
-			if (error) throw new Error('Failed to decline invitation');
-			break;
+			if (error) {
+				return { error: 'Failed to decline invitation', success: false, action } as const;
+			}
+			return { success: true, action } as const;
+		}
+
+		case 'schedule': {
+			const date = formData.get('date')?.toString();
+			const time = formData.get('time')?.toString();
+			if (!date || !time) throw new Error('Date and time are required');
+
+			const startAt = new Date(`${date}T${time}`).toISOString();
+
+			// Get the invitation first to get the interview_id
+			const { data: invitation, error: invitationError } = await supabase
+				.from('candidate_invitations')
+				.select('interview_id')
+				.eq('id', invitationId)
+				.eq('email', session.user.email)
+				.single();
+
+			if (invitationError || !invitation) {
+				return { error: 'Failed to get invitation', success: false, action } as const;
+			}
+
+			// Update the interview start time
+			const { error: scheduleError } = await supabase
+				.from('interviews')
+				.update({ start_at: startAt })
+				.eq('id', invitation.interview_id);
+
+			if (scheduleError) {
+				return { error: 'Failed to schedule interview', success: false, action } as const;
+			}
+			return { success: true, action } as const;
+		}
+
+		case 'reschedule': {
+			const date = formData.get('date')?.toString();
+			const time = formData.get('time')?.toString();
+			if (!date || !time) throw new Error('Date and time are required');
+
+			const startAt = new Date(`${date}T${time}`).toISOString();
+
+			// Start a transaction by using .rpc()
+			const { error: rescheduleError } = await supabase.rpc('reschedule_interview_invitation', {
+				p_invitation_id: invitationId,
+				p_candidate_id: session.user.id,
+				p_start_at: startAt,
+			});
+
+			if (rescheduleError) {
+				return { error: 'Failed to reschedule interview', success: false, action } as const;
+			}
+			return { success: true, action } as const;
 		}
 
 		default:
 			throw new Error('Invalid action');
 	}
-
-	return null;
 }
 
 function LoadingState() {
@@ -142,6 +213,56 @@ function LoadingState() {
 export default function InterviewsScreen() {
 	const { pendingInvitations, acceptedInterviews, declinedInvitations } = useLoaderData<typeof loader>();
 	const navigation = useNavigation();
+	const fetcher = useFetcher();
+	const actionData = useActionData<typeof action>();
+
+	React.useEffect(() => {
+		if (actionData?.success) {
+			switch (actionData.action) {
+				case 'accept':
+					toast.success("You have accepted the interview invitation");
+					break;
+				case 'decline':
+					toast.success("You have declined the interview invitation");
+					break;
+				case 'schedule':
+					toast.success("Interview has been scheduled");
+					break;
+				case 'reschedule':
+					toast.success("Interview has been rescheduled");
+					break;
+			}
+		} else if (actionData?.error) {
+			toast.error(actionData.error);
+		}
+	}, [actionData]);
+
+	// Add fetcher data handling for rescheduling
+	React.useEffect(() => {
+		const data = fetcher.data as typeof actionData;
+		if (data?.success) {
+			switch (data.action) {
+				case 'reschedule':
+					toast.success("Interview has been rescheduled");
+					break;
+			}
+		} else if (data?.error) {
+			toast.error(data.error);
+		}
+	}, [fetcher.data]);
+
+	// Disable the button while submitting
+	const isAccepting = fetcher.state === 'submitting' && fetcher.formData?.get('action') === 'accept';
+
+	const handleReschedule = (invitationId: string, dateTime: string) => {
+		const [date, time] = dateTime.split('T');
+		const formData = new FormData();
+		formData.set('action', 'reschedule');
+		formData.set('invitationId', invitationId);
+		formData.set('date', date);
+		formData.set('time', time);
+		fetcher.submit(formData, { method: 'post' });
+	};
 
 	if (navigation.state === 'loading') {
 		return <LoadingState />;
@@ -158,42 +279,53 @@ export default function InterviewsScreen() {
 						{pendingInvitations.map(invitation => (
 							<div key={invitation.id} className="bg-white rounded-lg shadow overflow-hidden">
 								<div className="p-6">
-									<div className="flex justify-between items-start">
-										<div>
-											<h3 className="text-lg font-medium text-gray-900">{invitation.interview_name}</h3>
-											<p className="text-sm text-gray-600 mt-1">{invitation.organization_name}</p>
-											{invitation.interview_description && (
-												<p className="text-sm text-gray-600 mt-2">{invitation.interview_description}</p>
-											)}
-											<div className="mt-2 text-sm text-gray-600">
-												<p>Duration: {invitation.interview_duration}</p>
-												{invitation.interview_start_at && (
-													<p>Scheduled for: {new Date(invitation.interview_start_at).toLocaleString()}</p>
+									<div className="space-y-4">
+										<div className="flex justify-between items-start">
+											<div>
+												<h3 className="text-lg font-medium text-gray-900">{invitation.interview_name}</h3>
+												<p className="text-sm text-gray-600 mt-1">{invitation.organization_name}</p>
+												{invitation.interview_description && (
+													<p className="text-sm text-gray-600 mt-2">{invitation.interview_description}</p>
 												)}
+												<div className="mt-2 text-sm text-gray-600">
+													<p>Duration: {invitation.interview_duration}</p>
+												</div>
+											</div>
+											<div className="flex gap-2">
+												<fetcher.Form method="post">
+													<input type="hidden" name="action" value="accept" />
+													<input type="hidden" name="invitationId" value={invitation.id} />
+													<button
+														type="submit"
+														disabled={isAccepting}
+														className={`inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${isAccepting ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+													>
+														{isAccepting ? 'Accepting...' : 'Accept'}
+													</button>
+												</fetcher.Form>
+												<fetcher.Form method="post">
+													<input type="hidden" name="action" value="decline" />
+													<input type="hidden" name="invitationId" value={invitation.id} />
+													<button
+														type="submit"
+														className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+													>
+														Decline
+													</button>
+												</fetcher.Form>
 											</div>
 										</div>
-										<div className="flex gap-2">
-											<Form method="post">
-												<input type="hidden" name="action" value="accept" />
-												<input type="hidden" name="invitationId" value={invitation.id} />
-												<button
-													type="submit"
-													className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-												>
-													Accept
-												</button>
-											</Form>
-											<Form method="post">
-												<input type="hidden" name="action" value="decline" />
-												<input type="hidden" name="invitationId" value={invitation.id} />
-												<button
-													type="submit"
-													className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-												>
-													Decline
-												</button>
-											</Form>
-										</div>
+
+										<InterviewSchedule
+											interview={
+												{
+													...invitation,
+													start_at: invitation.interview_start_at,
+												} as InterviewWithRelations
+											}
+											canEdit={true}
+											onSchedule={dateTime => handleReschedule(invitation.id, dateTime)}
+										/>
 									</div>
 								</div>
 							</div>

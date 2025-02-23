@@ -8,6 +8,7 @@ import Layout from './components/Layout';
 import { OrganizationProvider } from './contexts/OrganizationContext';
 import { RoleProvider } from './contexts/RoleContext';
 import { AppLayout } from './layouts/AppLayout';
+import { Toaster } from './components/ui/sonner';
 
 import globalStyles from './styles/globals.css?url';
 import styles from './tailwind.css?url';
@@ -58,6 +59,7 @@ export default function App() {
 				</RoleProvider>
 				<ScrollRestoration />
 				<Scripts />
+				<Toaster position="top-right" expand={true} richColors closeButton theme="light" />
 			</body>
 		</html>
 	);

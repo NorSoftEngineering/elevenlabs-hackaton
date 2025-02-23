@@ -7,10 +7,13 @@ import {
 	useActionData,
 	useLoaderData,
 	useNavigation,
+	useNavigate,
 } from 'react-router';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { type Interview } from '~/types';
 import { createSupabaseServer } from '~/utils/supabase.server';
+import { toast } from "sonner"
+import React from 'react';
 
 export { ErrorBoundary };
 
@@ -75,11 +78,11 @@ export async function action({ request }: ActionFunctionArgs) {
 	const duration = formData.get('duration')?.toString();
 
 	if (!name) {
-		return { error: 'Name is required' } as const;
+		return { error: 'Name is required', success: false } as const;
 	}
 
 	if (!duration) {
-		return { error: 'Duration is required' } as const;
+		return { error: 'Duration is required', success: false } as const;
 	}
 
 	const interview: Omit<Interview, 'id' | 'created_at' | 'updated_at'> = {
@@ -93,10 +96,10 @@ export async function action({ request }: ActionFunctionArgs) {
 	const { error } = await supabase.from('interviews').insert(interview).select().single();
 
 	if (error) {
-		return { error: 'Failed to create interview' } as const;
+		return { error: 'Failed to create interview', success: false } as const;
 	}
 
-	return redirect('/dashboard/interviews');
+	return { success: true };
 }
 
 function LoadingState() {
@@ -126,6 +129,16 @@ export default function InterviewNewScreen() {
 	const { organizationId } = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
 	const navigation = useNavigation();
+	const navigate = useNavigate();
+
+	React.useEffect(() => {
+		if (actionData?.success) {
+			toast.success("Interview has been created");
+			navigate('/dashboard/interviews');
+		} else if (actionData?.error) {
+			toast.error(actionData.error);
+		}
+	}, [actionData, navigate]);
 
 	if (navigation.state === 'loading') {
 		return <LoadingState />;

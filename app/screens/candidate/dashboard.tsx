@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 import RoleGuard from '~/components/RoleGuard';
 import type { CandidateProfile, Interview } from '~/types/candidate';
 import { getSupabaseEnv } from '~/utils/env.server';
+import { toast } from "sonner"
 
 export const loader = async () => {
 	return {
@@ -35,7 +36,10 @@ export default function CandidateDashboard() {
 					.order('start_datetime', { ascending: true })
 					.limit(5);
 
-				if (interviewError) throw interviewError;
+				if (interviewError) {
+					toast.error("Failed to load upcoming interviews");
+					throw interviewError;
+				}
 
 				setUpcomingInterviews(interviews || []);
 
@@ -46,14 +50,20 @@ export default function CandidateDashboard() {
 					.eq('user_id', session.session.user.id)
 					.single();
 
-				if (profileError) throw profileError;
+				if (profileError) {
+					toast.error("Failed to load profile data");
+					throw profileError;
+				}
 
 				const fields = ['bio', 'skills', 'experience', 'education', 'location'];
 				const completedFields = fields.filter(field => profile && profile[field]);
-				setProfileCompletion((completedFields.length / fields.length) * 100);
+				const newCompletion = (completedFields.length / fields.length) * 100;
+				setProfileCompletion(newCompletion);
+
 			} catch (err) {
 				console.error('Error loading dashboard data:', err);
 				setError('Failed to load dashboard data');
+				toast.error("Failed to load dashboard data");
 			} finally {
 				setIsLoading(false);
 			}

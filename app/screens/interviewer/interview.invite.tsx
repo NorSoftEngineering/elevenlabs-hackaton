@@ -7,10 +7,13 @@ import {
 	useActionData,
 	useLoaderData,
 	useNavigation,
+	useNavigate,
 } from 'react-router';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { type InterviewWithRelations } from '~/types';
 import { createSupabaseServer } from '~/utils/supabase.server';
+import { toast } from "sonner"
+import React from 'react';
 
 export { ErrorBoundary };
 
@@ -100,14 +103,14 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		.filter(Boolean);
 
 	if (!emails?.length) {
-		return { error: 'At least one email is required' } as const;
+		return { error: 'At least one email is required', success: false } as const;
 	}
 
 	// Validate email format
 	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 	const invalidEmails = emails.filter(email => !emailRegex.test(email));
 	if (invalidEmails.length) {
-		return { error: `Invalid email format: ${invalidEmails.join(', ')}` } as const;
+		return { error: `Invalid email format: ${invalidEmails.join(', ')}`, success: false } as const;
 	}
 
 	// Check if any of the emails are already invited
@@ -118,12 +121,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		.in('email', emails);
 
 	if (invitationsError) {
-		return { error: 'Failed to check existing invitations' } as const;
+		return { error: 'Failed to check existing invitations', success: false } as const;
 	}
 
 	const alreadyInvited = existingInvitations?.map(i => i.email);
 	if (alreadyInvited?.length) {
-		return { error: `Some emails are already invited: ${alreadyInvited.join(', ')}` } as const;
+		return { error: `Some emails are already invited: ${alreadyInvited.join(', ')}`, success: false } as const;
 	}
 
 	// Create invitations
@@ -133,13 +136,34 @@ export async function action({ request, params }: ActionFunctionArgs) {
 		status: 'pending',
 	}));
 
-	const { error } = await supabase.from('interviews_invitations').insert(invitations);
+	const { data: createdInvitations, error } = await supabase
+		.from('interviews_invitations')
+		.insert(invitations)
+		.select();
 
 	if (error) {
-		return { error: 'Failed to create invitations' } as const;
+		return { error: 'Failed to create invitations', success: false } as const;
 	}
 
-	return redirect(`/dashboard/interviews/${params.id}`);
+	// Call webhook
+	try {
+		await fetch(`https://hook.eu2.make.com/4u0brjktjwfm18k5hj78pojv009s61fx`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				interviewerId: params.id,
+				invitations: createdInvitations,
+				invited_by: session.user.id,
+				organization_id: orgMember.organization_id,
+			}),
+		});
+	} catch (webhookError) {
+		console.error('Failed to call webhook:', webhookError);
+	}
+
+	return { success: true, count: emails.length };
 }
 
 function LoadingState() {
@@ -165,6 +189,16 @@ export default function InterviewInviteScreen() {
 	const { interview } = useLoaderData<typeof loader>();
 	const actionData = useActionData<typeof action>();
 	const navigation = useNavigation();
+	const navigate = useNavigate();
+
+	React.useEffect(() => {
+		if (actionData?.success) {
+			toast.success(`Successfully invited ${actionData.count} candidate${actionData.count > 1 ? 's' : ''}`);
+			navigate(`/dashboard/interviews/${interview.id}`);
+		} else if (actionData?.error) {
+			toast.error(actionData.error);
+		}
+	}, [actionData, navigate, interview.id]);
 
 	if (navigation.state === 'loading') {
 		return <LoadingState />;
