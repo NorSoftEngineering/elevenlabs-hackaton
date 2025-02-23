@@ -7,11 +7,14 @@ import {
 	useLoaderData,
 	useNavigation,
 	useSubmit,
+	useActionData,
 } from 'react-router';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { InterviewSchedule } from '~/components/InterviewSchedule';
 import { type InterviewWithRelations } from '~/types';
 import { createSupabaseServer } from '~/utils/supabase.server';
+import { toast } from "sonner"
+import React from 'react';
 
 export { ErrorBoundary };
 
@@ -77,8 +80,6 @@ export async function action({ request }: ActionFunctionArgs) {
 	const action = formData.get('action');
 	const invitationId = formData.get('invitationId')?.toString();
 
-	console.log('Action called with:', { action, invitationId });
-
 	if (!invitationId) {
 		throw new Error('Invitation ID is required');
 	}
@@ -94,7 +95,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	switch (action) {
 		case 'accept': {
-			console.log('Starting accept action for invitation:', invitationId);
 			// Get the invitation first to get the interview_id
 			const { data: invitation, error: invitationError } = await supabase
 				.from('candidate_invitations')
@@ -104,11 +104,8 @@ export async function action({ request }: ActionFunctionArgs) {
 				.single();
 
 			if (invitationError || !invitation) {
-				console.error('Failed to get invitation:', invitationError);
-				throw new Error('Failed to get invitation');
+				return { error: 'Failed to get invitation', success: false, action } as const;
 			}
-
-			console.log('Found invitation:', invitation);
 
 			// Start a transaction by using .rpc()
 			const { error: acceptError } = await supabase.rpc('accept_interview_invitation', {
@@ -117,12 +114,10 @@ export async function action({ request }: ActionFunctionArgs) {
 			});
 
 			if (acceptError) {
-				console.error('Failed to accept invitation:', acceptError);
-				throw new Error('Failed to accept invitation');
+				return { error: 'Failed to accept invitation', success: false, action } as const;
 			}
 
-			console.log('Successfully accepted invitation');
-			break;
+			return { success: true, action } as const;
 		}
 
 		case 'decline': {
@@ -132,8 +127,10 @@ export async function action({ request }: ActionFunctionArgs) {
 				.eq('id', invitationId)
 				.eq('email', session.user.email);
 
-			if (error) throw new Error('Failed to decline invitation');
-			break;
+			if (error) {
+				return { error: 'Failed to decline invitation', success: false, action } as const;
+			}
+			return { success: true, action } as const;
 		}
 
 		case 'schedule': {
@@ -152,7 +149,7 @@ export async function action({ request }: ActionFunctionArgs) {
 				.single();
 
 			if (invitationError || !invitation) {
-				throw new Error('Failed to get invitation');
+				return { error: 'Failed to get invitation', success: false, action } as const;
 			}
 
 			// Update the interview start time
@@ -161,8 +158,10 @@ export async function action({ request }: ActionFunctionArgs) {
 				.update({ start_at: startAt })
 				.eq('id', invitation.interview_id);
 
-			if (scheduleError) throw new Error('Failed to schedule interview');
-			break;
+			if (scheduleError) {
+				return { error: 'Failed to schedule interview', success: false, action } as const;
+			}
+			return { success: true, action } as const;
 		}
 
 		case 'reschedule': {
@@ -179,15 +178,15 @@ export async function action({ request }: ActionFunctionArgs) {
 				p_start_at: startAt,
 			});
 
-			if (rescheduleError) throw new Error('Failed to reschedule interview');
-			break;
+			if (rescheduleError) {
+				return { error: 'Failed to reschedule interview', success: false, action } as const;
+			}
+			return { success: true, action } as const;
 		}
 
 		default:
 			throw new Error('Invalid action');
 	}
-
-	return null;
 }
 
 function LoadingState() {
@@ -215,6 +214,28 @@ export default function InterviewsScreen() {
 	const { pendingInvitations, acceptedInterviews, declinedInvitations } = useLoaderData<typeof loader>();
 	const navigation = useNavigation();
 	const fetcher = useFetcher();
+	const actionData = useActionData<typeof action>();
+
+	React.useEffect(() => {
+		if (actionData?.success) {
+			switch (actionData.action) {
+				case 'accept':
+					toast.success("You have accepted the interview invitation");
+					break;
+				case 'decline':
+					toast.success("You have declined the interview invitation");
+					break;
+				case 'schedule':
+					toast.success("Interview has been scheduled");
+					break;
+				case 'reschedule':
+					toast.success("Interview has been rescheduled");
+					break;
+			}
+		} else if (actionData?.error) {
+			toast.error(actionData.error);
+		}
+	}, [actionData]);
 
 	// Disable the button while submitting
 	const isAccepting = fetcher.state === 'submitting' && fetcher.formData?.get('action') === 'accept';
