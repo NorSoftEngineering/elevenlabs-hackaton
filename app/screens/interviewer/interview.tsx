@@ -14,8 +14,10 @@ import {
 import { toast } from 'sonner';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { InterviewSchedule } from '~/components/InterviewSchedule';
-import { type InterviewWithRelations } from '~/types';
+import { type InterviewWithRelations, type CandidateProfile } from '~/types/interview';
 import { createSupabaseServer } from '~/utils/supabase.server';
+import { CandidateProfile as CandidateProfileComponent } from '~/components/CandidateProfile';
+import { Dialog } from '@headlessui/react';
 
 export { ErrorBoundary };
 
@@ -48,17 +50,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		.from('interviews')
 		.select(`
       *,
-      candidates:interviews_candidates(
-        id,
-        interview_id,
-        candidate_id,
-        created_at,
-        candidate:profiles!candidate_id(id, email)
-      ),
+      candidates:interview_candidates_view!inner(*),
       invitations:interviews_invitations(*),
       interviewers:interviews_interviewers(
         id,
-        interview_id,
         interviewer_id,
         created_at,
         interviewer:profiles!interviewer_id(id, email)
@@ -73,7 +68,37 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		throw new Error('Interview not found');
 	}
 
-	return { interview: interview as unknown as InterviewWithRelations, role: orgMember.role };
+	// Transform the data to match our types
+	const transformedInterview = {
+		...interview,
+		candidates: interview.candidates.map((c: any) => ({
+			id: c.interview_candidate_id,
+			interview_id: c.interview_id,
+			candidate_id: c.candidate_id,
+			created_at: c.accepted_at,
+			candidate: {
+				id: c.profile_id,
+				email: c.email,
+				candidate_profile: [{
+					id: c.candidate_profile_id,
+					profile_id: c.profile_id,
+					name: c.name,
+					phone: c.phone,
+					title: c.title,
+					experience_years: c.experience_years,
+					skills: c.skills,
+					bio: c.bio,
+					location: c.location,
+					resume_url: c.resume_url,
+					resume_filename: c.resume_filename,
+					created_at: c.profile_created_at,
+					updated_at: c.profile_updated_at
+				}].filter(p => p.id) // Only include if profile exists
+			}
+		}))
+	};
+
+	return { interview: transformedInterview as unknown as InterviewWithRelations, role: orgMember.role };
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {
@@ -393,6 +418,7 @@ export default function InterviewScreen() {
 	const submit = useSubmit();
 	const actionData = useActionData<typeof action>();
 	const navigate = useNavigate();
+	const [selectedCandidateId, setSelectedCandidateId] = React.useState<string | null>(null);
 
 	React.useEffect(() => {
 		if (actionData?.success) {
@@ -433,6 +459,10 @@ export default function InterviewScreen() {
 		formData.set('time', time);
 		submit(formData, { method: 'post' });
 	};
+
+  const selectedCandidate = interview.candidates?.find(c => c.candidate.id === selectedCandidateId);
+  console.log(selectedCandidate);
+  console.log(interview.candidates);
 
 	return (
 		<div className="p-6 max-w-6xl mx-auto">
@@ -494,8 +524,14 @@ export default function InterviewScreen() {
 										</h3>
 										<div className="space-y-2">
 											{interview.candidates?.map(candidate => (
-												<div key={candidate.candidate.id} className="text-gray-700">
-													{candidate.candidate.email}
+												<div key={candidate.candidate.id} className="flex items-center justify-between text-gray-700">
+													<span>{candidate.candidate.email}</span>
+													<button
+														onClick={() => setSelectedCandidateId(candidate.candidate.id)}
+														className="text-brand-primary hover:text-brand-primary-dark text-sm"
+													>
+														View Profile
+													</button>
 												</div>
 											))}
 										</div>
@@ -547,6 +583,44 @@ export default function InterviewScreen() {
 					</div>
 				</div>
 			</div>
+
+			<Dialog
+				open={selectedCandidateId !== null}
+				onClose={() => setSelectedCandidateId(null)}
+				className="fixed inset-0 z-50 overflow-y-auto"
+			>
+				<div className="flex items-center justify-center min-h-screen">
+					<div className="fixed inset-0 bg-black opacity-30" />
+
+					<div className="relative bg-white rounded-lg max-w-2xl w-full mx-4 my-8">
+						<div className="absolute top-0 right-0 pt-4 pr-4">
+							<button
+								type="button"
+								className="text-gray-400 hover:text-gray-500"
+								onClick={() => setSelectedCandidateId(null)}
+							>
+								<span className="sr-only">Close</span>
+								<svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+								</svg>
+							</button>
+						</div>
+
+						<div className="p-6">
+							<Dialog.Title className="text-lg font-medium text-gray-900 mb-4">Candidate Profile</Dialog.Title>
+							{selectedCandidateId && (
+								<>
+									{(() => {
+										const profile = interview.candidates?.find(c => c.candidate.id === selectedCandidateId)?.candidate.candidate_profile?.[0];
+										if (!profile) return <div className="text-gray-500">No profile information available</div>;
+										return <CandidateProfileComponent profile={profile} />;
+									})()}
+								</>
+							)}
+						</div>
+					</div>
+				</div>
+			</Dialog>
 		</div>
 	);
 }
