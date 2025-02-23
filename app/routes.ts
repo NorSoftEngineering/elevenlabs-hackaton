@@ -19,6 +19,9 @@ export default [
 		route('interviews/new', './screens/interviewer/interview.new.tsx'),
 		route('interviews/:id', './screens/interviewer/interview.tsx'),
 		route('interviews/:id/invite', './screens/interviewer/interview.invite.tsx'),
+
+		// Analytics routes
+		route('analytics', './screens/interviewer/analytics/analytics.tsx'),
 	]),
 
 	// Candidate routes
