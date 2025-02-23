@@ -77,63 +77,93 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			interview_checkpoints: {
+				Row: {
+					checkpoint_id: number | null;
+					completed_at: string | null;
+					covered_topics: string[];
+					created_at: string | null;
+					description: string | null;
+					id: number;
+					interview_id: string | null;
+					title: string | null;
+					updated_at: string | null;
+				};
+				Insert: {
+					checkpoint_id?: number | null;
+					completed_at?: string | null;
+					covered_topics?: string[];
+					created_at?: string | null;
+					description?: string | null;
+					id?: number;
+					interview_id?: string | null;
+					title?: string | null;
+					updated_at?: string | null;
+				};
+				Update: {
+					checkpoint_id?: number | null;
+					completed_at?: string | null;
+					covered_topics?: string[];
+					created_at?: string | null;
+					description?: string | null;
+					id?: number;
+					interview_id?: string | null;
+					title?: string | null;
+					updated_at?: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'interview_checkpoints_interview_id_fkey';
+						columns: ['interview_id'];
+						isOneToOne: false;
+						referencedRelation: 'interview_details';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'interview_checkpoints_interview_id_fkey';
+						columns: ['interview_id'];
+						isOneToOne: false;
+						referencedRelation: 'interviews';
+						referencedColumns: ['id'];
+					},
+				];
+			};
 			interviews: {
 				Row: {
 					created_at: string;
 					description: string | null;
 					duration: unknown;
 					id: string;
+					messages: Json | null;
 					name: string;
 					organization_id: string;
 					start_at: string | null;
 					status: Database['public']['Enums']['interview_status'];
 					updated_at: string;
-					messages:
-						| {
-								id: string;
-								message: string;
-								source: string;
-								timestamp: string;
-						  }[]
-						| null;
 				};
 				Insert: {
 					created_at?: string;
 					description?: string | null;
 					duration?: unknown;
 					id?: string;
+					messages?: Json | null;
 					name: string;
 					organization_id: string;
 					start_at?: string | null;
 					status?: Database['public']['Enums']['interview_status'];
 					updated_at?: string;
-					messages?:
-						| {
-								id: string;
-								message: string;
-								source: string;
-								timestamp: string;
-						  }[]
-						| null;
 				};
 				Update: {
 					created_at?: string;
 					description?: string | null;
 					duration?: unknown;
 					id?: string;
+					messages?: Json | null;
 					name?: string;
 					organization_id?: string;
 					start_at?: string | null;
 					status?: Database['public']['Enums']['interview_status'];
 					updated_at?: string;
-					messages?:
-						| {
-								id: string;
-								message: string;
-								source: string;
-								timestamp: string;
-						  }[]
-						| null;
 				};
 				Relationships: [
 					{
@@ -165,6 +195,20 @@ export type Database = {
 					interview_id?: string;
 				};
 				Relationships: [
+					{
+						foreignKeyName: 'interviews_candidates_candidate_id_fkey1';
+						columns: ['candidate_id'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'interviews_candidates_interview_id_fkey';
+						columns: ['interview_id'];
+						isOneToOne: false;
+						referencedRelation: 'interview_details';
+						referencedColumns: ['id'];
+					},
 					{
 						foreignKeyName: 'interviews_candidates_interview_id_fkey';
 						columns: ['interview_id'];
@@ -198,7 +242,21 @@ export type Database = {
 						foreignKeyName: 'interviews_interviewers_interview_id_fkey';
 						columns: ['interview_id'];
 						isOneToOne: false;
+						referencedRelation: 'interview_details';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'interviews_interviewers_interview_id_fkey';
+						columns: ['interview_id'];
+						isOneToOne: false;
 						referencedRelation: 'interviews';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'interviews_interviewers_interviewer_id_fkey1';
+						columns: ['interviewer_id'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
 						referencedColumns: ['id'];
 					},
 				];
@@ -229,6 +287,13 @@ export type Database = {
 					status?: Database['public']['Enums']['invitation_status'];
 				};
 				Relationships: [
+					{
+						foreignKeyName: 'interviews_invitations_interview_id_fkey';
+						columns: ['interview_id'];
+						isOneToOne: false;
+						referencedRelation: 'interview_details';
+						referencedColumns: ['id'];
+					},
 					{
 						foreignKeyName: 'interviews_invitations_interview_id_fkey';
 						columns: ['interview_id'];
@@ -390,84 +455,101 @@ export type Database = {
 				};
 				Relationships: [];
 			};
-			interview_checkpoints: {
-				Row: {
-					id: string;
-					interview_id: string;
-					checkpoint_id: number;
-					title: string;
-					description: string;
-					completed_at: string | null;
-					created_at: string;
-					updated_at: string;
-				};
-				Insert: {
-					id?: string;
-					interview_id: string;
-					checkpoint_id: number;
-					title: string;
-					description: string;
-					completed_at?: string | null;
-					created_at?: string;
-					updated_at?: string;
-				};
-				Update: {
-					id?: string;
-					interview_id?: string;
-					checkpoint_id?: number;
-					title?: string;
-					description?: string;
-					completed_at?: string | null;
-					created_at?: string;
-					updated_at?: string;
-				};
-				Relationships: [
-					{
-						foreignKeyName: 'interview_checkpoints_interview_id_fkey';
-						columns: ['interview_id'];
-						isOneToOne: false;
-						referencedRelation: 'interviews';
-						referencedColumns: ['id'];
-					},
-				];
-			};
-			interview_messages: {
-				Row: {
-					id: string;
-					interview_id: string;
-					message: string;
-					source: string;
-					timestamp: string;
-					created_at: string;
-				};
-				Insert: {
-					id?: string;
-					interview_id: string;
-					message: string;
-					source: string;
-					timestamp: string;
-					created_at?: string;
-				};
-				Update: {
-					id?: string;
-					interview_id?: string;
-					message?: string;
-					source?: string;
-					timestamp?: string;
-					created_at?: string;
-				};
-				Relationships: [
-					{
-						foreignKeyName: 'interview_messages_interview_id_fkey';
-						columns: ['interview_id'];
-						isOneToOne: false;
-						referencedRelation: 'interviews';
-						referencedColumns: ['id'];
-					},
-				];
-			};
 		};
 		Views: {
+			candidate_interviews: {
+				Row: {
+					candidate_id: string | null;
+					created_at: string | null;
+					id: string | null;
+					interview_description: string | null;
+					interview_duration: unknown | null;
+					interview_id: string | null;
+					interview_name: string | null;
+					interview_start_at: string | null;
+					interview_status: Database['public']['Enums']['interview_status'] | null;
+					organization_name: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'interviews_candidates_candidate_id_fkey1';
+						columns: ['candidate_id'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'interviews_candidates_interview_id_fkey';
+						columns: ['interview_id'];
+						isOneToOne: false;
+						referencedRelation: 'interview_details';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'interviews_candidates_interview_id_fkey';
+						columns: ['interview_id'];
+						isOneToOne: false;
+						referencedRelation: 'interviews';
+						referencedColumns: ['id'];
+					},
+				];
+			};
+			candidate_invitations: {
+				Row: {
+					email: string | null;
+					id: string | null;
+					interview_description: string | null;
+					interview_duration: unknown | null;
+					interview_id: string | null;
+					interview_name: string | null;
+					interview_start_at: string | null;
+					interview_status: Database['public']['Enums']['interview_status'] | null;
+					invited_at: string | null;
+					organization_name: string | null;
+					responded_at: string | null;
+					status: Database['public']['Enums']['invitation_status'] | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'interviews_invitations_interview_id_fkey';
+						columns: ['interview_id'];
+						isOneToOne: false;
+						referencedRelation: 'interview_details';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'interviews_invitations_interview_id_fkey';
+						columns: ['interview_id'];
+						isOneToOne: false;
+						referencedRelation: 'interviews';
+						referencedColumns: ['id'];
+					},
+				];
+			};
+			interview_details: {
+				Row: {
+					created_at: string | null;
+					description: string | null;
+					duration: unknown | null;
+					id: string | null;
+					messages: Json | null;
+					name: string | null;
+					organization_id: string | null;
+					organization_name: string | null;
+					start_at: string | null;
+					status: Database['public']['Enums']['interview_status'] | null;
+					updated_at: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'interviews_organization_id_fkey';
+						columns: ['organization_id'];
+						isOneToOne: false;
+						referencedRelation: 'organizations';
+						referencedColumns: ['id'];
+					},
+				];
+			};
 			member_profiles: {
 				Row: {
 					created_at: string | null;
@@ -490,6 +572,20 @@ export type Database = {
 			};
 		};
 		Functions: {
+			accept_interview_invitation: {
+				Args: {
+					p_invitation_id: string;
+					p_candidate_id: string;
+				};
+				Returns: undefined;
+			};
+			append_interview_message: {
+				Args: {
+					p_interview_id: string;
+					p_message: Json;
+				};
+				Returns: Json;
+			};
 			get_auth_uid: {
 				Args: Record<PropertyKey, never>;
 				Returns: string;
@@ -530,7 +626,7 @@ export type Database = {
 			};
 		};
 		Enums: {
-			interview_status: 'ready' | 'scheduled' | 'canceled' | 'confirmed' | 'done' | 'paused';
+			interview_status: 'ready' | 'scheduled' | 'canceled' | 'confirmed' | 'done';
 			invitation_status: 'pending' | 'accepted' | 'declined';
 			user_role: 'admin' | 'interviewer' | 'candidate';
 		};

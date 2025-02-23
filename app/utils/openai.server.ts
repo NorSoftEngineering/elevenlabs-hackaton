@@ -10,13 +10,13 @@ type Message = {
 
 type AnalysisResult = {
 	covered_topics: string[];
-	confidence_scores: number[];
 	summary: string;
 	follow_up_questions: string[];
 };
 
 const openai = new OpenAI({
-	apiKey: process.env.OPENAI_API_KEY,
+	apiKey: process.env.GROQ_API_KEY,
+	baseURL: 'https://api.groq.com/openai/v1',
 });
 
 // Helper to ensure valid OpenAI roles
@@ -29,9 +29,8 @@ function mapSourceToRole(source: string): 'user' | 'assistant' {
 
 export async function analyzeCheckpointCompletion(
 	messages: Message[],
-	requiredTopics: string[],
-	minTopicsCovered: number,
-	requiredDepth: number,
+	topics: string[],
+	requiredTopics: number,
 ): Promise<AnalysisResult> {
 	// Convert messages to a structured conversation format with valid OpenAI roles
 	const conversation: ChatCompletionMessageParam[] = messages.map(msg => ({
@@ -46,42 +45,30 @@ export async function analyzeCheckpointCompletion(
 
 	console.log('Processed conversation for analysis:', validConversation);
 
-	const systemPrompt = `You are an expert technical interviewer analyzing a software engineering interview. 
-Your task is to evaluate the candidate's responses for technical depth and understanding.
+	const systemPrompt = `You are analyzing a technical interview conversation.
+Your task is to track which topics have been meaningfully discussed.
 
-Required topics to assess: ${requiredTopics.join(', ')}
-Minimum topics needed: ${minTopicsCovered}
-Required depth (confidence): ${requiredDepth}
+Topics to track: ${topics.join(', ')}
+Required topics to cover: ${requiredTopics}
 
-Evaluation criteria:
-1. Technical accuracy of responses
-2. Depth of understanding (not just surface-level knowledge)
-3. Real-world application examples
-4. Problem-solving approach
-5. Communication clarity
+A topic is considered covered if:
+1. The candidate has provided a clear response about it
+2. There was meaningful discussion (not just a mention)
+3. The candidate showed practical understanding
 
-For each topic:
-- Score 0.2: Basic mention without detail
-- Score 0.4: Surface level explanation
-- Score 0.6: Good understanding with some details
-- Score 0.8: In-depth knowledge with examples
-- Score 1.0: Expert-level understanding with implementation details
+Your job is to:
+1. Track which topics were covered in the conversation
+2. Provide a brief summary of what was discussed
+3. Suggest follow-up questions for uncovered topics
 
-Focus on:
-- Concrete examples over theoretical knowledge
-- Implementation details over general concepts
-- Problem-solving approach over memorized answers
-- Technical accuracy and precision
-- Follow-up potential for deeper discussion
-
-Example good response analysis:
-- If candidate explains React state management with hooks, context, and performance considerations: 0.8-1.0
-- If candidate describes REST with proper HTTP methods, status codes, and real examples: 0.8-1.0
-- If candidate explains Node.js event loop with examples and error handling: 0.8-1.0`;
+Please focus on:
+- Identifying clear topic coverage
+- Tracking conversation progress
+- Noting areas that need more discussion`;
 
 	try {
 		const response = await openai.chat.completions.create({
-			model: 'gpt-4o-mini',
+			model: 'llama-3.1-8b-instant',
 			messages: [
 				{
 					role: 'system',
@@ -91,23 +78,21 @@ Example good response analysis:
 				{
 					role: 'system',
 					content: `Please analyze the conversation and provide:
-1. Which required topics were meaningfully covered
-2. Confidence score for each covered topic
-3. Brief summary of the candidate's technical understanding
-4. Suggested follow-up questions to probe deeper
+1. Which topics were meaningfully covered
+2. Brief summary of the discussion
+3. Suggested follow-up questions for uncovered topics
 
 Format your response as a JSON object with:
 {
   "covered_topics": string[],
-  "confidence_scores": number[],
   "summary": string,
   "follow_up_questions": string[]
 }`,
 				},
 			],
 			response_format: { type: 'json_object' },
-			temperature: 0.1, // Add lower temperature for more consistent analysis
-			max_tokens: 1000, // Ensure enough tokens for detailed analysis
+			temperature: 0.1,
+			max_tokens: 1000,
 		});
 
 		if (!response.choices[0].message.content) {
@@ -116,13 +101,18 @@ Format your response as a JSON object with:
 
 		const result = JSON.parse(response.choices[0].message.content) as AnalysisResult;
 
+		console.log('Raw OpenAI response:', response.choices[0].message.content);
+		console.log('Parsed result:', result);
+
 		// Validate and clean up the result
-		return {
-			covered_topics: result.covered_topics || [],
-			confidence_scores: result.confidence_scores || [],
+		const validatedResult = {
+			covered_topics: Array.isArray(result.covered_topics) ? result.covered_topics : [],
 			summary: result.summary || 'No summary provided',
-			follow_up_questions: result.follow_up_questions || [],
+			follow_up_questions: Array.isArray(result.follow_up_questions) ? result.follow_up_questions : [],
 		};
+
+		console.log('Validated result:', validatedResult);
+		return validatedResult;
 	} catch (error) {
 		console.error('OpenAI API error:', error);
 		throw new Error('Failed to analyze interview content');

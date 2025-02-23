@@ -55,7 +55,12 @@ type DBMessage = {
 type InterviewData = {
 	id: string;
 	status: string;
-	interview_checkpoints: any[];
+	interview_checkpoints: {
+		id: string;
+		checkpoint_id: number;
+		covered_topics: string[];
+		completed_at: string | null;
+	}[];
 	messages: DBMessage[];
 };
 
@@ -64,86 +69,36 @@ const CHECKPOINTS = [
 		id: 1,
 		title: 'Project Experience',
 		description: 'Recent projects and contributions',
-		required_topics: [
-			'project overview and scope',
-			'personal contribution and role',
-			'implementation details',
-			'technical decisions made',
-			'challenges overcome',
-			'team collaboration',
-		],
-		completion_criteria: {
-			min_topics_covered: 5,
-			required_depth: 0.8,
-		},
+		topics: ['project overview', 'personal contribution', 'technical implementation', 'team collaboration'],
+		required_topics: 3, // Need to cover at least 3 topics
 	},
 	{
 		id: 2,
 		title: 'Frontend Core',
 		description: 'JavaScript and frontend fundamentals',
-		required_topics: [
-			'javascript threading model',
-			'event loop understanding',
-			'promises and async',
-			'event bubbling',
-			'dom manipulation',
-			'browser apis',
-		],
-		completion_criteria: {
-			min_topics_covered: 5,
-			required_depth: 0.85,
-		},
+		topics: ['javascript core concepts', 'async programming', 'dom manipulation', 'browser apis'],
+		required_topics: 3,
 	},
 	{
 		id: 3,
 		title: 'Frontend Frameworks',
 		description: 'Framework expertise and styling',
-		required_topics: [
-			'react experience',
-			'state management',
-			'component lifecycle',
-			'css frameworks comparison',
-			'tailwind vs styled-components',
-			'performance optimization',
-		],
-		completion_criteria: {
-			min_topics_covered: 5,
-			required_depth: 0.8,
-		},
+		topics: ['react experience', 'state management', 'styling approach', 'performance optimization'],
+		required_topics: 3,
 	},
 	{
 		id: 4,
 		title: 'Backend & Architecture',
 		description: 'Server-side and infrastructure',
-		required_topics: [
-			'rest architecture',
-			'client-server communication',
-			'nodejs backend experience',
-			'serverless vs traditional',
-			'database knowledge',
-			'api design patterns',
-		],
-		completion_criteria: {
-			min_topics_covered: 4,
-			required_depth: 0.75,
-		},
+		topics: ['rest architecture', 'nodejs experience', 'database knowledge', 'api design'],
+		required_topics: 2,
 	},
 	{
 		id: 5,
 		title: 'Testing & DevOps',
 		description: 'Quality and deployment',
-		required_topics: [
-			'unit testing approach',
-			'testing frameworks',
-			'ci/cd pipelines',
-			'github actions',
-			'docker usage',
-			'deployment platforms',
-		],
-		completion_criteria: {
-			min_topics_covered: 4,
-			required_depth: 0.75,
-		},
+		topics: ['testing approach', 'ci/cd experience', 'deployment process', 'docker usage'],
+		required_topics: 2,
 	},
 ];
 
@@ -155,6 +110,7 @@ type LoaderData = {
 		status: string;
 		currentCheckpoint: number;
 		messages: Message[];
+		coveredTopics: string[];
 	} | null;
 };
 
@@ -214,7 +170,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 		return {
 			signedUrl: body.signed_url,
-			organizationId: 'c949eba5-e3da-41d4-8b93-6ebe7bbf46b0', //hardcoded for now
+			organizationId: 'c949eba5-e3da-41d4-8b93-6ebe7bbf46b0',
 			interview: interview
 				? {
 						id: interview.id,
@@ -226,6 +182,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 							source: normalizeMessageSource(msg.source),
 							timestamp: new Date(msg.timestamp).getTime(),
 						})),
+						coveredTopics: interview.interview_checkpoints.reduce<string[]>(
+							(acc, checkpoint) => [...acc, ...(checkpoint.covered_topics || [])],
+							[],
+						),
 					}
 				: null,
 		};
@@ -271,6 +231,9 @@ export async function action({ request }: ActionFunctionArgs) {
 					checkpoint_id: checkpoint.id,
 					title: checkpoint.title,
 					description: checkpoint.description,
+					covered_topics: [], // Initialize with empty array (non-null)
+					created_at: new Date().toISOString(),
+					updated_at: new Date().toISOString(),
 				})),
 			);
 
@@ -311,7 +274,7 @@ export async function action({ request }: ActionFunctionArgs) {
 				p_message: {
 					id: messageId,
 					message,
-					source, // Already normalized
+					source,
 					timestamp: new Date(Number(timestamp)).toISOString(),
 				},
 			});
@@ -330,34 +293,100 @@ export async function action({ request }: ActionFunctionArgs) {
 						(messages as DBMessage[]).map(msg => ({
 							id: msg.id,
 							text: msg.message,
-							source: msg.source as MessageSource,
+							source: normalizeMessageSource(msg.source),
 							timestamp: new Date(msg.timestamp).getTime(),
 						})),
+						currentCheckpoint.topics,
 						currentCheckpoint.required_topics,
-						currentCheckpoint.completion_criteria.min_topics_covered,
-						currentCheckpoint.completion_criteria.required_depth,
 					);
 
 					console.log('Analysis result:', result);
+					console.log('Covered topics length:', result.covered_topics?.length);
+					console.log('Covered topics:', result.covered_topics);
+
+					// Update covered topics in Supabase
+					if (Array.isArray(result.covered_topics) && result.covered_topics.length > 0) {
+						console.log('Checking if checkpoint exists...');
+
+						// First check if the checkpoint exists - use maybeSingle() to handle no results
+						const { data: existingCheckpoint, error: checkError } = await supabase
+							.from('interview_checkpoints')
+							.select('*') // Select all fields to help with debugging
+							.eq('interview_id', interviewId)
+							.eq('checkpoint_id', Number(checkpointId))
+							.maybeSingle();
+
+						console.log('Checkpoint check result:', { existingCheckpoint, checkError });
+
+						if (checkError) {
+							console.error('Error checking checkpoint:', checkError);
+							throw new Error(`Failed to check checkpoint: ${checkError.message}`);
+						}
+
+						if (!existingCheckpoint) {
+							console.log('Checkpoint does not exist, creating new one...');
+							console.log('Insert payload:', {
+								interview_id: interviewId,
+								checkpoint_id: Number(checkpointId),
+								title: currentCheckpoint.title,
+								description: currentCheckpoint.description,
+								covered_topics: result.covered_topics,
+							});
+
+							const { error: insertError } = await supabase.from('interview_checkpoints').insert({
+								interview_id: interviewId,
+								checkpoint_id: Number(checkpointId),
+								title: currentCheckpoint.title,
+								description: currentCheckpoint.description,
+								covered_topics: result.covered_topics,
+								created_at: new Date().toISOString(),
+								updated_at: new Date().toISOString(),
+								...(result.covered_topics.length >= currentCheckpoint.required_topics
+									? { completed_at: new Date().toISOString() }
+									: {}),
+							});
+
+							if (insertError) {
+								console.error('Failed to insert checkpoint:', insertError);
+								throw new Error(`Failed to insert checkpoint: ${insertError.message}`);
+							}
+							console.log('Successfully created checkpoint with covered topics');
+						} else {
+							console.log('Found existing checkpoint, updating...', existingCheckpoint);
+							const { error: updateError } = await supabase
+								.from('interview_checkpoints')
+								.update({
+									covered_topics: result.covered_topics,
+									updated_at: new Date().toISOString(),
+									...(result.covered_topics.length >= currentCheckpoint.required_topics
+										? { completed_at: new Date().toISOString() }
+										: {}),
+								})
+								.eq('interview_id', interviewId)
+								.eq('checkpoint_id', Number(checkpointId));
+
+							if (updateError) {
+								console.error('Failed to update covered topics:', updateError);
+								throw new Error(`Failed to update covered topics: ${updateError.message}`);
+							}
+							console.log('Successfully updated covered topics');
+						}
+					} else {
+						console.log('No covered topics to update');
+					}
 
 					// Update the conversation context with analysis results
 					const context = {
-						covered_topics: result.covered_topics,
-						remaining_topics: currentCheckpoint.required_topics.filter(topic => !result.covered_topics.includes(topic)),
-						current_depth: result.confidence_scores.reduce((a, b) => a + b, 0) / result.confidence_scores.length,
+						covered_topics: result.covered_topics || [],
+						remaining_topics: currentCheckpoint.topics.filter(topic => !result.covered_topics.includes(topic)),
 						follow_up_questions: result.follow_up_questions,
 						summary: result.summary,
 					};
 
 					// Check if checkpoint is completed
 					const topicsCovered = result.covered_topics.length;
-					const averageConfidence =
-						result.confidence_scores.reduce((a, b) => a + b, 0) / result.confidence_scores.length;
 
-					if (
-						topicsCovered >= currentCheckpoint.completion_criteria.min_topics_covered &&
-						averageConfidence >= currentCheckpoint.completion_criteria.required_depth
-					) {
+					if (topicsCovered >= currentCheckpoint.required_topics) {
 						return {
 							success: true,
 							messages,
@@ -402,6 +431,7 @@ export default function AgentRoute() {
 	const [error, setError] = useState<string | null>(null);
 	const [messages, setMessages] = useState<Message[]>(interview?.messages || []);
 	const [currentCheckpoint, setCurrentCheckpoint] = useState(interview?.currentCheckpoint || 1);
+	const [coveredTopics, setCoveredTopics] = useState<string[]>(interview?.coveredTopics || []);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const [isPaused, setIsPaused] = useState(interview?.status === 'paused');
 
@@ -430,7 +460,14 @@ export default function AgentRoute() {
 		formData.append('checkpointId', currentCheckpoint.toString());
 
 		const response = await submit(formData, { method: 'post' });
-		return response as unknown as ActionResponse;
+		const result = response as unknown as ActionResponse;
+
+		// Update covered topics when we get new analysis
+		if (result.context?.covered_topics) {
+			setCoveredTopics(prev => [...new Set([...prev, ...result.context!.covered_topics])]);
+		}
+
+		return result;
 	};
 
 	const conversation = useConversation({
@@ -450,8 +487,8 @@ export default function AgentRoute() {
 					id: checkpoint.id,
 					title: checkpoint.title,
 					description: checkpoint.description,
+					topics: checkpoint.topics,
 					required_topics: checkpoint.required_topics,
-					completion_criteria: checkpoint.completion_criteria,
 				})),
 				current_checkpoint: currentCheckpoint,
 			},
@@ -582,32 +619,82 @@ export default function AgentRoute() {
 			<div className="w-80 border-r bg-white p-6 hidden md:block">
 				<h2 className="text-xl font-semibold mb-6 text-brand-primary">Interview Progress</h2>
 				<div className="space-y-8">
-					{CHECKPOINTS.map(checkpoint => (
-						<div
-							key={checkpoint.id}
-							className={cn(
-								'flex items-start gap-4 transition-all duration-300',
-								checkpoint.id <= currentCheckpoint ? 'opacity-100' : 'opacity-50',
-							)}
-						>
-							{checkpoint.id <= currentCheckpoint ? (
-								<CheckCircle2 className="w-6 h-6 text-brand-primary mt-1" />
-							) : (
-								<Circle className="w-6 h-6 text-brand-secondary mt-1" />
-							)}
-							<div>
-								<h3
-									className={`font-medium ${checkpoint.id <= currentCheckpoint ? 'text-brand-primary' : 'text-brand-secondary'}`}
-								>
-									{checkpoint.title}
-								</h3>
-								<p className="text-sm text-gray-500">{checkpoint.description}</p>
+					{CHECKPOINTS.map(checkpoint => {
+						const isActive = checkpoint.id === currentCheckpoint;
+						const isCompleted = checkpoint.id < currentCheckpoint;
+						const checkpointTopicsCovered = checkpoint.topics.filter(topic => coveredTopics.includes(topic));
+						const progress = Math.round((checkpointTopicsCovered.length / checkpoint.topics.length) * 100);
+
+						return (
+							<div
+								key={checkpoint.id}
+								className={cn(
+									'space-y-2 transition-all duration-300',
+									checkpoint.id <= currentCheckpoint ? 'opacity-100' : 'opacity-50',
+								)}
+							>
+								<div className="flex items-start gap-4">
+									{isCompleted ? (
+										<CheckCircle2 className="w-6 h-6 text-brand-primary mt-1" />
+									) : isActive ? (
+										<Circle className="w-6 h-6 text-brand-primary mt-1 animate-pulse" />
+									) : (
+										<Circle className="w-6 h-6 text-brand-secondary mt-1" />
+									)}
+									<div className="flex-1">
+										<h3
+											className={cn(
+												'font-medium',
+												isActive ? 'text-brand-primary' : isCompleted ? 'text-brand-primary' : 'text-brand-secondary',
+											)}
+										>
+											{checkpoint.title}
+										</h3>
+										<p className="text-sm text-gray-500">{checkpoint.description}</p>
+
+										{/* Progress bar for topics */}
+										<div className="mt-2">
+											<div className="flex justify-between text-xs text-brand-secondary">
+												<span>
+													{checkpointTopicsCovered.length} of {checkpoint.topics.length} topics
+												</span>
+												<span>{progress}%</span>
+											</div>
+											<div className="h-1 bg-brand-neutral rounded-full mt-1">
+												<div
+													className="h-full bg-brand-primary rounded-full transition-all duration-500"
+													style={{ width: `${progress}%` }}
+												/>
+											</div>
+										</div>
+
+										{/* Topics list */}
+										<div className="mt-3 space-y-1">
+											{checkpoint.topics.map(topic => (
+												<div
+													key={topic}
+													className={cn(
+														'flex items-center text-sm gap-2',
+														coveredTopics.includes(topic) ? 'text-brand-primary' : 'text-gray-400',
+													)}
+												>
+													{coveredTopics.includes(topic) ? (
+														<CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+													) : (
+														<Circle className="w-4 h-4 flex-shrink-0" />
+													)}
+													<span>{topic}</span>
+												</div>
+											))}
+										</div>
+									</div>
+								</div>
 							</div>
-						</div>
-					))}
+						);
+					})}
 				</div>
 
-				{/* Progress bar */}
+				{/* Overall Progress bar */}
 				<div className="mt-8">
 					<div className="flex justify-between text-sm text-brand-secondary mb-2">
 						<span>Overall Progress</span>
