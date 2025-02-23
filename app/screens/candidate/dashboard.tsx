@@ -131,7 +131,12 @@ export default function CandidateDashboard() {
 							<div className="flex items-center">
 								<div className="flex-shrink-0">
 									<svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+										/>
 									</svg>
 								</div>
 								<div className="ml-5 w-0 flex-1">
@@ -149,7 +154,12 @@ export default function CandidateDashboard() {
 							<div className="flex items-center">
 								<div className="flex-shrink-0">
 									<svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
 									</svg>
 								</div>
 								<div className="ml-5 w-0 flex-1">
@@ -167,7 +177,12 @@ export default function CandidateDashboard() {
 							<div className="flex items-center">
 								<div className="flex-shrink-0">
 									<svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
 									</svg>
 								</div>
 								<div className="ml-5 w-0 flex-1">
@@ -185,7 +200,12 @@ export default function CandidateDashboard() {
 							<div className="flex items-center">
 								<div className="flex-shrink-0">
 									<svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
 									</svg>
 								</div>
 								<div className="ml-5 w-0 flex-1">
@@ -207,8 +227,8 @@ export default function CandidateDashboard() {
 							<span className="text-sm text-gray-500">{Math.round(profileCompletion)}%</span>
 						</div>
 						<div className="mt-4 w-full bg-gray-200 rounded-full h-2.5">
-							<div 
-								className="bg-brand-primary h-2.5 rounded-full transition-all duration-500" 
+							<div
+								className="bg-brand-primary h-2.5 rounded-full transition-all duration-500"
 								style={{ width: `${profileCompletion}%` }}
 							></div>
 						</div>
