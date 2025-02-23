@@ -59,7 +59,7 @@ export default function App() {
 				</RoleProvider>
 				<ScrollRestoration />
 				<Scripts />
-				<Toaster />
+				<Toaster position="top-right" expand={true} richColors closeButton theme="light" />
 			</body>
 		</html>
 	);

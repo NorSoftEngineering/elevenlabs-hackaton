@@ -3,6 +3,8 @@ import { type ActionFunctionArgs, type LoaderFunctionArgs, redirect } from 'reac
 import { Form, useActionData, useLoaderData, useNavigation } from 'react-router';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { createSupabaseServer } from '~/utils/supabase.server';
+import { toast } from "sonner"
+import React from 'react';
 
 export { ErrorBoundary };
 
@@ -54,12 +56,12 @@ export async function action({ request }: ActionFunctionArgs) {
 	if (resumeFile && resumeFile.size > 0) {
 		// Validate file type
 		if (resumeFile.type !== 'application/pdf') {
-			return { error: 'Only PDF files are allowed' };
+			return { error: 'Only PDF files are allowed', success: false } as const;
 		}
 
 		// Validate file size (5MB)
 		if (resumeFile.size > 5 * 1024 * 1024) {
-			return { error: 'File size must be less than 5MB' };
+			return { error: 'File size must be less than 5MB', success: false } as const;
 		}
 
 		try {
@@ -75,7 +77,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 			if (uploadError) {
 				console.error('Failed to upload resume', uploadError);
-				return { error: 'Failed to upload resume' };
+				return { error: 'Failed to upload resume', success: false } as const;
 			}
 
 			// Get the public URL
@@ -89,7 +91,7 @@ export async function action({ request }: ActionFunctionArgs) {
 			};
 		} catch (error) {
 			console.error('Failed to handle resume upload', error);
-			return { error: 'Failed to upload resume' };
+			return { error: 'Failed to upload resume', success: false } as const;
 		}
 	}
 
@@ -115,7 +117,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	// Validate required fields
 	if (!updates.name || !updates.title) {
-		return { error: 'Name and title are required' };
+		return { error: 'Name and title are required', success: false } as const;
 	}
 
 	const { error } = await supabase
@@ -126,7 +128,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 	if (error) {
 		console.error('Failed to update profile', error);
-		return { error: 'Failed to update profile' };
+		return { error: 'Failed to update profile', success: false } as const;
 	}
 
 	return redirect('/candidate/profile');
@@ -297,6 +299,14 @@ export default function ProfileEditScreen() {
 	const navigation = useNavigation();
 	const actionData = useActionData<typeof action>();
 	const isSubmitting = navigation.state === 'submitting';
+
+	React.useEffect(() => {
+		if (actionData?.success) {
+			toast.success("Profile has been updated");
+		} else if (actionData?.error) {
+			toast.error(actionData.error);
+		}
+	}, [actionData]);
 
 	if (navigation.state === 'loading') {
 		return <LoadingProfile />;

@@ -237,6 +237,20 @@ export default function InterviewsScreen() {
 		}
 	}, [actionData]);
 
+	// Add fetcher data handling for rescheduling
+	React.useEffect(() => {
+		const data = fetcher.data as typeof actionData;
+		if (data?.success) {
+			switch (data.action) {
+				case 'reschedule':
+					toast.success("Interview has been rescheduled");
+					break;
+			}
+		} else if (data?.error) {
+			toast.error(data.error);
+		}
+	}, [fetcher.data]);
+
 	// Disable the button while submitting
 	const isAccepting = fetcher.state === 'submitting' && fetcher.formData?.get('action') === 'accept';
 
