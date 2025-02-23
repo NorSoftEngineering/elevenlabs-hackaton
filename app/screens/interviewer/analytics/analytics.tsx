@@ -2,11 +2,11 @@ import { Link } from 'react-router';
 import { type LoaderFunctionArgs, useLoaderData, useNavigation, useSearchParams } from 'react-router';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { createSupabaseServer } from '~/utils/supabase.server';
-import { InterviewPerformance } from './components/InterviewPerformance';
 import { CandidateMetrics } from './components/CandidateMetrics';
 import { CheckpointAnalysis } from './components/CheckpointAnalysis';
-import { OrganizationInsights } from './components/OrganizationInsights';
 import { ExportButton } from './components/ExportButton';
+import { InterviewPerformance } from './components/InterviewPerformance';
+import { OrganizationInsights } from './components/OrganizationInsights';
 import type { AnalyticsData, CandidateData, CandidateProfile } from './types';
 
 export { ErrorBoundary };
@@ -42,7 +42,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	dateRange.setDate(dateRange.getDate() - parseInt(days));
 
 	// Fetch interview stats
-	const { data: interviewStats, error: interviewError } = await supabase.from('interviews')
+	const { data: interviewStats, error: interviewError } = await supabase
+		.from('interviews')
 		.select(`
 			id,
 			status,
@@ -123,16 +124,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	// Process interview stats
 	const processedInterviewStats = {
 		totalInterviews: interviewStats?.length || 0,
-		completedInterviews: interviewStats?.filter(i => i.status === 'ready' && new Date(i.start_at) < new Date()).length || 0,
-		scheduledInterviews: interviewStats?.filter(i => i.status === 'ready' && new Date(i.start_at) >= new Date()).length || 0,
-		avgDurationHours: interviewStats?.reduce((acc, i) => acc + (i.duration ? parseFloat(i.duration) : 0), 0) / (interviewStats?.length || 1),
-		timeDistribution: interviewStats?.reduce((acc, i) => {
-			const day = new Date(i.start_at).getDay();
-			const hour = new Date(i.start_at).getHours();
-			const key = `${day}_${hour}`;
-			acc[key] = (acc[key] || 0) + 1;
-			return acc;
-		}, {} as Record<string, number>) || {},
+		completedInterviews:
+			interviewStats?.filter(i => i.status === 'ready' && new Date(i.start_at) < new Date()).length || 0,
+		scheduledInterviews:
+			interviewStats?.filter(i => i.status === 'ready' && new Date(i.start_at) >= new Date()).length || 0,
+		avgDurationHours:
+			interviewStats?.reduce((acc, i) => acc + (i.duration ? parseFloat(i.duration) : 0), 0) /
+			(interviewStats?.length || 1),
+		timeDistribution:
+			interviewStats?.reduce(
+				(acc, i) => {
+					const day = new Date(i.start_at).getDay();
+					const hour = new Date(i.start_at).getHours();
+					const key = `${day}_${hour}`;
+					acc[key] = (acc[key] || 0) + 1;
+					return acc;
+				},
+				{} as Record<string, number>,
+			) || {},
 	};
 
 	// Process candidate stats
@@ -167,13 +176,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const processedCheckpointStats = {
 		totalCheckpoints: checkpointStats?.length || 0,
 		completedCheckpoints: checkpointStats?.filter(c => c.completed_at).length || 0,
-		avgCheckpointDurationMins: checkpointStats?.reduce((acc, c) => {
-			if (c.completed_at && c.created_at) {
-				const duration = new Date(c.completed_at).getTime() - new Date(c.created_at).getTime();
-				return acc + duration / 1000 / 60;
-			}
-			return acc;
-		}, 0) / (checkpointStats?.filter(c => c.completed_at).length || 1),
+		avgCheckpointDurationMins:
+			checkpointStats?.reduce((acc, c) => {
+				if (c.completed_at && c.created_at) {
+					const duration = new Date(c.completed_at).getTime() - new Date(c.created_at).getTime();
+					return acc + duration / 1000 / 60;
+				}
+				return acc;
+			}, 0) / (checkpointStats?.filter(c => c.completed_at).length || 1),
 		allTopics: Array.from(allTopics),
 	};
 
@@ -181,16 +191,22 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const uniqueInterviewers = new Set(organizationStats?.map(i => i.interviewer_id));
 
 	// Process volume data by day
-	const volumeData = interviewStats?.reduce((acc, interview) => {
-		const date = new Date(interview.created_at).toISOString().split('T')[0];
-		const existingDay = acc.find(d => d.date === date);
-		if (existingDay) {
-			existingDay.interviews++;
-		} else {
-			acc.push({ date, interviews: 1 });
-		}
-		return acc;
-	}, [] as Array<{ date: string; interviews: number }>).sort((a, b) => a.date.localeCompare(b.date)) || [];
+	const volumeData =
+		interviewStats
+			?.reduce(
+				(acc, interview) => {
+					const date = new Date(interview.created_at).toISOString().split('T')[0];
+					const existingDay = acc.find(d => d.date === date);
+					if (existingDay) {
+						existingDay.interviews++;
+					} else {
+						acc.push({ date, interviews: 1 });
+					}
+					return acc;
+				},
+				[] as Array<{ date: string; interviews: number }>,
+			)
+			.sort((a, b) => a.date.localeCompare(b.date)) || [];
 
 	const processedOrganizationStats = {
 		activeInterviewers: uniqueInterviewers.size,

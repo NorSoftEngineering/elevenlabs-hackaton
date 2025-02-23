@@ -209,7 +209,9 @@ export type Database = {
 			};
 			interviews: {
 				Row: {
+					brief_result: string | null;
 					created_at: string;
+					deadline: string | null;
 					description: string | null;
 					duration: unknown;
 					elevenlabs_conversation_id: string | null;
@@ -223,7 +225,9 @@ export type Database = {
 					updated_at: string;
 				};
 				Insert: {
+					brief_result?: string | null;
 					created_at?: string;
+					deadline?: string | null;
 					description?: string | null;
 					duration?: unknown;
 					elevenlabs_conversation_id?: string | null;
@@ -237,7 +241,9 @@ export type Database = {
 					updated_at?: string;
 				};
 				Update: {
+					brief_result?: string | null;
 					created_at?: string;
+					deadline?: string | null;
 					description?: string | null;
 					duration?: unknown;
 					elevenlabs_conversation_id?: string | null;
@@ -394,72 +400,6 @@ export type Database = {
 					},
 				];
 			};
-			leads: {
-				Row: {
-					created_at: string;
-					email: string;
-					first_name: string | null;
-					gender: string | null;
-					id: number;
-					last_name: string | null;
-					phone: string | null;
-				};
-				Insert: {
-					created_at?: string;
-					email: string;
-					first_name?: string | null;
-					gender?: string | null;
-					id?: number;
-					last_name?: string | null;
-					phone?: string | null;
-				};
-				Update: {
-					created_at?: string;
-					email?: string;
-					first_name?: string | null;
-					gender?: string | null;
-					id?: number;
-					last_name?: string | null;
-					phone?: string | null;
-				};
-				Relationships: [];
-			};
-			meetings: {
-				Row: {
-					active: boolean | null;
-					created_at: string;
-					duration: number | null;
-					end_datetime: string | null;
-					id: number;
-					meeting_id: string;
-					meeting_link: string | null;
-					start_datetime: string | null;
-					status: string | null;
-				};
-				Insert: {
-					active?: boolean | null;
-					created_at?: string;
-					duration?: number | null;
-					end_datetime?: string | null;
-					id?: number;
-					meeting_id: string;
-					meeting_link?: string | null;
-					start_datetime?: string | null;
-					status?: string | null;
-				};
-				Update: {
-					active?: boolean | null;
-					created_at?: string;
-					duration?: number | null;
-					end_datetime?: string | null;
-					id?: number;
-					meeting_id?: string;
-					meeting_link?: string | null;
-					start_datetime?: string | null;
-					status?: string | null;
-				};
-				Relationships: [];
-			};
 			organization_members: {
 				Row: {
 					created_at: string | null;
@@ -550,6 +490,7 @@ export type Database = {
 		Views: {
 			candidate_interviews: {
 				Row: {
+					candidate_email: string | null;
 					candidate_id: string | null;
 					created_at: string | null;
 					id: string | null;
@@ -560,7 +501,6 @@ export type Database = {
 					interview_start_at: string | null;
 					interview_status: Database['public']['Enums']['interview_status'] | null;
 					organization_name: string | null;
-					candidate_email: string | null;
 				};
 				Relationships: [
 					{

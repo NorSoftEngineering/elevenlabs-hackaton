@@ -33,6 +33,7 @@ export default [
 		route('interviews/:id', './screens/candidate/interview.tsx'),
 	]),
 	route('agent', './routes/protected.agent.tsx'),
+	route('auth/signout', './routes/auth.signout.tsx'),
 
 	// 404 catch-all route
 	route('*', './screens/404.tsx'),

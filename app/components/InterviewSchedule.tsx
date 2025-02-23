@@ -9,7 +9,7 @@ type Props = {
 	onSchedule?: (date: string) => void;
 };
 
-export function InterviewSchedule({ interview, canEdit = false, onSchedule }: Props) {
+export function InterviewSchedule({ interview, onSchedule }: Props) {
 	const [isOpen, setIsOpen] = useState(false);
 
 	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -31,27 +31,6 @@ export function InterviewSchedule({ interview, canEdit = false, onSchedule }: Pr
 
 	return (
 		<>
-			<div className="flex items-center justify-between bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-				<div>
-					<h3 className="text-lg font-medium text-gray-900">Schedule</h3>
-					{interview.start_at ? (
-						<p className="text-sm text-gray-600 mt-1">Scheduled for {new Date(interview.start_at).toLocaleString()}</p>
-					) : (
-						<p className="text-sm text-gray-600 mt-1">Not scheduled yet</p>
-					)}
-				</div>
-
-				{canEdit && (
-					<button
-						type="button"
-						onClick={() => setIsOpen(true)}
-						className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-					>
-						{interview.start_at ? 'Reschedule' : 'Schedule'}
-					</button>
-				)}
-			</div>
-
 			<Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
 				<div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 

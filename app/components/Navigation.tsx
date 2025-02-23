@@ -1,8 +1,10 @@
 import { Session } from '@supabase/supabase-js';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useOutletContext } from 'react-router';
+import { Form } from 'react-router';
 import { useRole } from '~/contexts/RoleContext';
 import type { OutletContext } from '~/types/context';
 import { isInterviewerRole } from '~/types/role';
@@ -11,11 +13,6 @@ import { OrganizationSelector } from './OrganizationSelector';
 export default function Navigation({ context }: { context: { session: Session; supabase: SupabaseClient } }) {
 	const { userRole, isLoading } = useRole();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-	const handleSignOut = async () => {
-		await context.supabase.auth.signOut();
-		// The auth state change in root.tsx will trigger a page reload
-	};
 
 	if (isLoading) return null;
 
@@ -84,21 +81,23 @@ export default function Navigation({ context }: { context: { session: Session; s
 										</p>
 									</div>
 									<div className="py-1" role="menu">
-										<button
-											onClick={handleSignOut}
-											className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-											role="menuitem"
-										>
-											<svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-												/>
-											</svg>
-											Logout
-										</button>
+										<Form action="/auth/signout" method="POST">
+											<button
+												type="submit"
+												className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+												role="menuitem"
+											>
+												<svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+													/>
+												</svg>
+												Logout
+											</button>
+										</Form>
 									</div>
 								</div>
 							)}
