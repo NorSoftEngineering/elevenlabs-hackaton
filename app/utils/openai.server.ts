@@ -83,8 +83,6 @@ export async function analyzeCheckpointCompletion(
 		msg => msg.content && typeof msg.content === 'string' && msg.content.trim().length > 0,
 	);
 
-	console.log('Processed conversation for analysis:', validConversation);
-
 	const criteria = CHECKPOINT_CRITERIA[options.checkpointId as keyof typeof CHECKPOINT_CRITERIA];
 
 	const systemPrompt = `You are analyzing a technical interview conversation.
@@ -147,8 +145,6 @@ Format your response as a JSON object with:
 		}
 
 		const result = JSON.parse(response.choices[0].message.content) as AnalysisResult;
-
-		console.log('Checkpoint analysis result:', result);
 
 		return {
 			checkpointCompleted: result.score >= criteria.minScore,

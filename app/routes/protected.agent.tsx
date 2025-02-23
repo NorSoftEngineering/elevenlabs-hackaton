@@ -1,7 +1,7 @@
 import { Form, redirect, useLoaderData, useNavigation, useSubmit } from 'react-router';
 
 import { useConversation } from '@11labs/react';
-import { CheckCircle2, Circle, Pause, Play, Send, X } from 'lucide-react';
+import { CheckCircle2, Circle, Mic, Pause, Play, Send, Volume2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { LottieAvatar } from '~/components/LottieAvatar';
@@ -231,20 +231,6 @@ export async function action({ request }: ActionFunctionArgs) {
 			return { success: true, interviewId: interview.id };
 		}
 
-		case 'pause': {
-			const { error } = await supabase.from('interviews').update({ status: 'paused' }).eq('id', interviewId);
-
-			if (error) throw new Response('Failed to pause interview', { status: 500 });
-			return { success: true };
-		}
-
-		case 'resume': {
-			const { error } = await supabase.from('interviews').update({ status: 'ready' }).eq('id', interviewId);
-
-			if (error) throw new Response('Failed to resume interview', { status: 500 });
-			return { success: true };
-		}
-
 		case 'end': {
 			// Update interview status to done
 			const { error: updateError } = await supabase.from('interviews').update({ status: 'done' }).eq('id', interviewId);
@@ -403,7 +389,6 @@ export default function AgentRoute() {
 	const [error, setError] = useState<string | null>(null);
 	const [messages, setMessages] = useState<Message[]>(interview?.messages || []);
 	const [currentCheckpoint, setCurrentCheckpoint] = useState(interview?.currentCheckpoint || 1);
-	const [isPaused, setIsPaused] = useState(interview?.status === 'paused');
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
 	// Add dynamic variables state
@@ -494,29 +479,29 @@ export default function AgentRoute() {
 				setError('Failed to process message');
 			}
 		},
+		onStartSpeaking: () => {
+			console.log('Started speaking');
+		},
+		onStopSpeaking: () => {
+			console.log('Stopped speaking');
+		},
 		onError: (err: Error) => {
 			const errorMessage = `Conversation error: ${err.message}`;
 			console.error(errorMessage, err);
 			setError(errorMessage);
-			setIsPaused(true);
 		},
 		onStatusChange: (status: string) => {
 			console.log('Status changed to:', status);
-			if (status === 'disconnected') {
-				console.log('Connection lost - waiting for potential reconnection');
-			}
 		},
 		onReconnecting: () => {
 			console.log('Attempting to reconnect...');
 		},
 		onReconnected: () => {
 			console.log('Successfully reconnected');
-			setIsPaused(false);
 			setError(null);
 		},
 		onReconnectFailed: () => {
 			console.log('Reconnection failed - ending session');
-			setIsPaused(true);
 			setError('Connection lost - please try starting the session again');
 		},
 	});
@@ -527,7 +512,6 @@ export default function AgentRoute() {
 	const handleStartSession = async () => {
 		try {
 			setError(null);
-			setIsPaused(false);
 			await conversation.startSession({
 				context: {
 					user_name: dynamicVariables.user_name,
@@ -537,44 +521,6 @@ export default function AgentRoute() {
 		} catch (err) {
 			console.error('Failed to start session:', err);
 			setError('Failed to start conversation');
-			setIsPaused(true);
-		}
-	};
-
-	const handlePauseResume = async () => {
-		if (!interview?.id) return;
-
-		try {
-			if (isPaused) {
-				setError(null);
-				setIsPaused(false);
-				submit(
-					{
-						intent: 'resume',
-						interviewId: interview.id,
-					},
-					{ method: 'post' },
-				);
-				await conversation.startSession({
-					context: {
-						user_name: dynamicVariables.user_name,
-						job: dynamicVariables.job,
-					},
-				});
-			} else {
-				setIsPaused(true);
-				submit(
-					{
-						intent: 'pause',
-						interviewId: interview.id,
-					},
-					{ method: 'post' },
-				);
-				await conversation.endSession();
-			}
-		} catch (err) {
-			console.error('Failed to pause/resume:', err);
-			setError('Failed to pause/resume conversation');
 		}
 	};
 
@@ -582,11 +528,9 @@ export default function AgentRoute() {
 		if (!interview?.id) return;
 
 		try {
-			// End the ElevenLabs conversation first
 			await conversation.endSession();
 
 			// Clean up UI state
-			setIsPaused(false);
 			setMessages([]);
 
 			// Submit the end action with the interview ID
@@ -606,36 +550,94 @@ export default function AgentRoute() {
 	return (
 		<div className="flex min-h-screen bg-white relative">
 			{/* Main chat area */}
-			<div className="flex-1 flex flex-col p-6 md:pr-[20rem]">
-				<Card className="bg-gradient-to-br from-[#FFE5A3]/20 to-[#FFD166]/20 backdrop-blur-sm border-none shadow-lg p-6 relative overflow-hidden">
-					<div className="absolute inset-0">
-						<div className="absolute inset-0 bg-gradient-to-r from-[#FFE5A3] to-[#FFD166] opacity-10" />
-						{/* Friendly background elements */}
-						{['🌟', '✨', '💫'].map((emoji, i) => (
-							<div
-								key={i}
-								className="absolute text-2xl opacity-20"
-								style={{
-									top: `${25 + i * 30}%`,
-									left: `${20 + i * 30}%`,
-									animation: 'float 3s ease-in-out infinite',
-									animationDelay: `${i * 0.5}s`,
-								}}
-							>
-								{emoji}
+			<div className="flex-1 flex flex-col p-6 md:pr-[20rem] relative">
+				{/* Sticky Avatar Card */}
+				<div className="sticky top-0 z-10 bg-white pb-6">
+					<Card className="bg-gradient-to-br from-[#FFE5A3]/20 to-[#FFD166]/20 backdrop-blur-sm border-none shadow-lg p-6 relative overflow-hidden">
+						<div className="absolute inset-0">
+							<div className="absolute inset-0 bg-gradient-to-r from-[#FFE5A3] to-[#FFD166] opacity-10" />
+							{/* Friendly background elements */}
+							{['🌟', '✨', '💫'].map((emoji, i) => (
+								<div
+									key={i}
+									className="absolute text-2xl opacity-20"
+									style={{
+										top: `${25 + i * 30}%`,
+										left: `${20 + i * 30}%`,
+										animation: 'float 3s ease-in-out infinite',
+										animationDelay: `${i * 0.5}s`,
+									}}
+								>
+									{emoji}
+								</div>
+							))}
+						</div>
+						<style>{`
+							@keyframes float {
+								0%, 100% { transform: translateY(0); }
+								50% { transform: translateY(-10px); }
+							}
+							@keyframes pulse {
+								0%, 100% { opacity: 1; transform: scale(1); }
+								50% { opacity: 0.5; transform: scale(0.95); }
+							}
+							@keyframes wave {
+								0% { transform: scaleY(1); }
+								50% { transform: scaleY(0.5); }
+								100% { transform: scaleY(1); }
+							}
+						`}</style>
+						<div className="relative w-full h-[400px]">
+							<LottieAvatar isSpeaking={conversation.isSpeaking} />
+							{/* Status Indicator */}
+							<div className="absolute top-4 right-4 flex items-center gap-2">
+								<div
+									className={cn(
+										'px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium transition-all duration-300',
+										!isConnected
+											? 'bg-brand-neutral text-brand-secondary border border-brand-secondary'
+											: conversation.isSpeaking
+												? 'bg-brand-primary text-white'
+												: 'bg-brand-neutral text-brand-primary border border-brand-primary',
+									)}
+								>
+									{!isConnected ? (
+										<>
+											<Circle className="w-4 h-4" />
+											Ready to Start
+										</>
+									) : conversation.isSpeaking ? (
+										<>
+											<div className="flex items-center gap-1">
+												<div
+													className="w-0.5 h-3 bg-white animate-[wave_1s_ease-in-out_infinite]"
+													style={{ animationDelay: '0s' }}
+												/>
+												<div
+													className="w-0.5 h-3 bg-white animate-[wave_1s_ease-in-out_infinite]"
+													style={{ animationDelay: '0.2s' }}
+												/>
+												<div
+													className="w-0.5 h-3 bg-white animate-[wave_1s_ease-in-out_infinite]"
+													style={{ animationDelay: '0.4s' }}
+												/>
+											</div>
+											<Volume2 className="w-4 h-4 animate-[pulse_2s_ease-in-out_infinite]" />
+											Speaking
+										</>
+									) : (
+										<>
+											<Mic className="w-4 h-4 animate-[pulse_2s_ease-in-out_infinite]" />
+											Listening
+										</>
+									)}
+								</div>
 							</div>
-						))}
-					</div>
-					<style>{`
-						@keyframes float {
-							0%, 100% { transform: translateY(0); }
-							50% { transform: translateY(-10px); }
-						}
-					`}</style>
-					<div className="relative w-full h-[400px]">
-						<LottieAvatar isSpeaking={conversation.isSpeaking} />
-					</div>
-				</Card>
+						</div>
+					</Card>
+				</div>
+
+				{/* Messages Container - adjust margin to account for sticky header */}
 				<div className="flex-1 bg-white backdrop-blur-sm border-none shadow-lg p-8 mb-6 overflow-hidden flex flex-col rounded-lg">
 					<div className="flex-1 overflow-y-auto pr-4 space-y-6">
 						{messages.length === 0 ? (
@@ -676,11 +678,6 @@ export default function AgentRoute() {
 					{/* Status and Error Display */}
 					<div className="mb-4 space-y-2">
 						{error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">{error}</div>}
-						{conversation.isSpeaking && (
-							<div className="bg-brand-neutral border border-brand-secondary text-brand-primary px-4 py-2 rounded">
-								Speaking...
-							</div>
-						)}
 					</div>
 				</div>
 
@@ -699,22 +696,13 @@ export default function AgentRoute() {
 							{isConnecting ? 'Connecting...' : 'Start Interview'}
 						</button>
 					) : (
-						<>
-							<button
-								onClick={handlePauseResume}
-								className="w-full border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white flex gap-2 items-center justify-center py-2 px-4 rounded-lg"
-							>
-								{isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-								{isPaused ? 'Resume Interview' : 'Pause Interview'}
-							</button>
-							<button
-								onClick={handleEndSession}
-								className="w-full bg-red-500 hover:bg-red-700 text-white flex gap-2 items-center justify-center py-2 px-4 rounded-lg"
-							>
-								<X className="w-4 h-4" />
-								End Interview
-							</button>
-						</>
+						<button
+							onClick={handleEndSession}
+							className="w-full bg-red-500 hover:bg-red-700 text-white flex gap-2 items-center justify-center py-2 px-4 rounded-lg"
+						>
+							<X className="w-4 h-4" />
+							End Interview
+						</button>
 					)}
 				</div>
 			</div>
