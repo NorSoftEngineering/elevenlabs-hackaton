@@ -3,10 +3,10 @@ import {
 	type ActionFunctionArgs,
 	Form,
 	type LoaderFunctionArgs,
+	useFetcher,
 	useLoaderData,
 	useNavigation,
 	useSubmit,
-	useFetcher,
 } from 'react-router';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { InterviewSchedule } from '~/components/InterviewSchedule';
@@ -280,14 +280,16 @@ export default function InterviewsScreen() {
 												</fetcher.Form>
 											</div>
 										</div>
-										
+
 										<InterviewSchedule
-											interview={{
-												...invitation,
-												start_at: invitation.interview_start_at,
-											} as InterviewWithRelations}
+											interview={
+												{
+													...invitation,
+													start_at: invitation.interview_start_at,
+												} as InterviewWithRelations
+											}
 											canEdit={true}
-											onSchedule={(dateTime) => handleReschedule(invitation.id, dateTime)}
+											onSchedule={dateTime => handleReschedule(invitation.id, dateTime)}
 										/>
 									</div>
 								</div>

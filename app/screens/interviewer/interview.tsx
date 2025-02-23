@@ -440,11 +440,7 @@ export default function InterviewScreen() {
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
 							<section className="mb-6">
-								<InterviewSchedule 
-									interview={interview} 
-									canEdit={canManage} 
-									onSchedule={handleSchedule} 
-								/>
+								<InterviewSchedule interview={interview} canEdit={canManage} onSchedule={handleSchedule} />
 							</section>
 
 							<section className="mb-6">
