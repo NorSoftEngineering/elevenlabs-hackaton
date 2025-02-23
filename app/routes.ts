@@ -14,6 +14,11 @@ export default [
 		route('orgs/new', './screens/orgs.new.tsx'),
 		route('orgs/:slug/settings', './screens/orgs.settings.tsx'),
 		route('orgs/:slug/members', './screens/orgs.members.tsx'),
+		// Interview management routes
+		route('interviews', './screens/interviewer/interviews.tsx'),
+		route('interviews/new', './screens/interviewer/interview.new.tsx'),
+		route('interviews/:id', './screens/interviewer/interview.tsx'),
+		route('interviews/:id/invite', './screens/interviewer/interview.invite.tsx'),
 	]),
 
 	// Candidate routes

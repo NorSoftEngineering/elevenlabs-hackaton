@@ -6,6 +6,7 @@ import { useOutletContext } from 'react-router';
 import { useRole } from '~/contexts/RoleContext';
 import type { OutletContext } from '~/types/context';
 import { isInterviewerRole } from '~/types/role';
+import { OrganizationSelector } from './OrganizationSelector';
 
 export default function Navigation({ context }: { context: { session: Session; supabase: SupabaseClient } }) {
 	const { userRole, isLoading } = useRole();
@@ -19,9 +20,9 @@ export default function Navigation({ context }: { context: { session: Session; s
 	if (isLoading) return null;
 
 	const interviewerLinks = [
-		{ href: '/organizations', label: 'Organizations' },
-		{ href: '/interviews', label: 'Interviews' },
-		{ href: '/analytics', label: 'Analytics' },
+		{ href: '/dashboard/orgs', label: 'Organizations' },
+		{ href: '/dashboard/interviews', label: 'Interviews' },
+		{ href: '/dashboard/analytics', label: 'Analytics' },
 	];
 
 	const candidateLinks = [
@@ -55,6 +56,7 @@ export default function Navigation({ context }: { context: { session: Session; s
 						</div>
 					</div>
 					<div className="flex items-center space-x-4">
+						{isInterviewerRole(userRole) && <OrganizationSelector />}
 						<div className="flex-shrink-0">
 							<div className="relative inline-block text-left">
 								<div>

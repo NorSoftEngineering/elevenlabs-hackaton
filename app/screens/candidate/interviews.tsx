@@ -1,77 +1,286 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link } from 'react-router';
+import { type ActionFunctionArgs, type LoaderFunctionArgs, Form, useLoaderData, useNavigation } from 'react-router';
+import { ErrorBoundary } from '~/components/ErrorBoundary';
+import { createSupabaseServer } from '~/utils/supabase.server';
+import { type InterviewWithRelations } from '~/types';
 
-interface Interview {
-	id: string;
-	companyName: string;
-	position: string;
-	date: string;
-	status: 'scheduled' | 'completed' | 'cancelled';
+export { ErrorBoundary };
+
+export async function loader({ request }: LoaderFunctionArgs) {
+	const headers = new Headers();
+	const supabase = createSupabaseServer(request, headers);
+
+	// Get the user's session first
+	const {
+		data: { session },
+		error: sessionError,
+	} = await supabase.auth.getSession();
+	if (sessionError || !session) {
+		throw new Error('Not authenticated');
+	}
+
+	// Get pending invitations
+	const { data: pendingInvitations, error: pendingError } = await supabase
+		.from('candidate_invitations')
+		.select('*')
+		.eq('status', 'pending')
+		.order('invited_at', { ascending: false })
+		.limit(10);
+
+	if (pendingError) {
+		console.error(pendingError);
+		throw new Error('Failed to load pending invitations');
+	}
+
+	// Get accepted interviews
+	const { data: acceptedInterviews, error: acceptedError } = await supabase
+		.from('candidate_interviews')
+		.select('*');
+
+	if (acceptedError) {
+		throw new Error('Failed to load accepted interviews');
+	}
+
+	// Get declined invitations
+	const { data: declinedInvitations, error: declinedError } = await supabase
+		.from('candidate_invitations')
+		.select('*')
+		.eq('status', 'declined');
+
+	if (declinedError) {
+		throw new Error('Failed to load declined invitations');
+	}
+
+	return {
+		pendingInvitations,
+		acceptedInterviews,
+		declinedInvitations,
+	};
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+	const headers = new Headers();
+	const supabase = createSupabaseServer(request, headers);
+	const formData = await request.formData();
+	const action = formData.get('action');
+	const invitationId = formData.get('invitationId')?.toString();
+
+	if (!invitationId) {
+		throw new Error('Invitation ID is required');
+	}
+
+	// Get the user's session first
+	const {
+		data: { session },
+		error: sessionError,
+	} = await supabase.auth.getSession();
+	if (sessionError || !session) {
+		throw new Error('Not authenticated');
+	}
+
+	switch (action) {
+		case 'accept': {
+			// Get the invitation first to get the interview_id
+			const { data: invitation, error: invitationError } = await supabase
+				.from('interviews_invitations')
+				.select('interview_id')
+				.eq('id', invitationId)
+				.eq('email', session.user.email)
+				.single();
+
+			if (invitationError || !invitation) {
+				throw new Error('Failed to get invitation');
+			}
+
+			// Start a transaction by using .rpc()
+			const { error: acceptError } = await supabase.rpc('accept_interview_invitation', {
+				p_invitation_id: invitationId,
+				p_candidate_id: session.user.id
+			});
+
+			if (acceptError) throw new Error('Failed to accept invitation');
+			break;
+		}
+
+		case 'decline': {
+			const { error } = await supabase
+				.from('interviews_invitations')
+				.update({ status: 'declined', responded_at: new Date().toISOString() })
+				.eq('id', invitationId)
+				.eq('email', session.user.email);
+
+			if (error) throw new Error('Failed to decline invitation');
+			break;
+		}
+
+		default:
+			throw new Error('Invalid action');
+	}
+
+	return null;
+}
+
+function LoadingState() {
+	return (
+		<div className="p-6 max-w-6xl mx-auto animate-pulse">
+			<div className="h-8 w-32 bg-gray-200 rounded mb-6"></div>
+			<div className="space-y-6">
+				{[1, 2, 3].map(i => (
+					<div key={i} className="bg-white rounded-lg shadow overflow-hidden">
+						<div className="p-6">
+							<div className="h-6 w-48 bg-gray-200 rounded mb-4"></div>
+							<div className="space-y-2">
+								<div className="h-4 w-32 bg-gray-200 rounded"></div>
+								<div className="h-4 w-24 bg-gray-200 rounded"></div>
+							</div>
+						</div>
+					</div>
+				))}
+			</div>
+		</div>
+	);
 }
 
 export default function InterviewsScreen() {
-	const navigate = useNavigate();
-	const [interviews] = useState<Interview[]>([
-		// Placeholder data
-		{
-			id: '1',
-			companyName: 'Example Corp',
-			position: 'Software Engineer',
-			date: '2024-03-20',
-			status: 'scheduled',
-		},
-	]);
+	const { pendingInvitations, acceptedInterviews, declinedInvitations } = useLoaderData<typeof loader>();
+	const navigation = useNavigation();
+
+	if (navigation.state === 'loading') {
+		return <LoadingState />;
+	}
 
 	return (
-		<div className="p-6">
-			<h1 className="text-2xl font-bold mb-6 text-brand-primary">My Interviews</h1>
+		<div className="p-6 max-w-6xl mx-auto">
+			<h1 className="text-2xl font-bold text-gray-700 mb-6">My Interviews</h1>
 
-			<div className="bg-white rounded-lg shadow overflow-hidden">
-				<table className="min-w-full divide-y divide-gray-200">
-					<thead className="bg-gray-50">
-						<tr>
-							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-								Company
-							</th>
-							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-								Position
-							</th>
-							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-							<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-						</tr>
-					</thead>
-					<tbody className="bg-white divide-y divide-gray-200">
-						{interviews.map(interview => (
-							<tr
-								key={interview.id}
-								onClick={() => navigate(`/candidate/interviews/${interview.id}`)}
-								className="cursor-pointer hover:bg-gray-50"
-							>
-								<td className="px-6 py-4 whitespace-nowrap">
-									<div className="text-sm font-medium text-gray-900">{interview.companyName}</div>
-								</td>
-								<td className="px-6 py-4 whitespace-nowrap">
-									<div className="text-sm text-gray-900">{interview.position}</div>
-								</td>
-								<td className="px-6 py-4 whitespace-nowrap">
-									<div className="text-sm text-gray-900">{new Date(interview.date).toLocaleDateString()}</div>
-								</td>
-								<td className="px-6 py-4 whitespace-nowrap">
-									<span
-										className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                    ${interview.status === 'scheduled' ? 'bg-yellow-100 text-yellow-800' : ''}
-                    ${interview.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
-                    ${interview.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
-                  `}
-									>
-										{interview.status.charAt(0).toUpperCase() + interview.status.slice(1)}
-									</span>
-								</td>
-							</tr>
+			{pendingInvitations.length > 0 && (
+				<section className="mb-8">
+					<h2 className="text-lg font-semibold text-gray-700 mb-4">Pending Invitations</h2>
+					<div className="space-y-4">
+						{pendingInvitations.map(invitation => (
+							<div key={invitation.id} className="bg-white rounded-lg shadow overflow-hidden">
+								<div className="p-6">
+									<div className="flex justify-between items-start">
+										<div>
+											<h3 className="text-lg font-medium text-gray-900">{invitation.interview_name}</h3>
+											<p className="text-sm text-gray-600 mt-1">
+												{invitation.organization_name}
+											</p>
+											{invitation.interview_description && (
+												<p className="text-sm text-gray-600 mt-2">{invitation.interview_description}</p>
+											)}
+											<div className="mt-2 text-sm text-gray-600">
+												<p>Duration: {invitation.interview_duration}</p>
+												{invitation.interview_start_at && (
+													<p>Scheduled for: {new Date(invitation.interview_start_at).toLocaleString()}</p>
+												)}
+											</div>
+										</div>
+										<div className="flex gap-2">
+											<Form method="post">
+												<input type="hidden" name="action" value="accept" />
+												<input type="hidden" name="invitationId" value={invitation.id} />
+												<button
+													type="submit"
+													className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+												>
+													Accept
+												</button>
+											</Form>
+											<Form method="post">
+												<input type="hidden" name="action" value="decline" />
+												<input type="hidden" name="invitationId" value={invitation.id} />
+												<button
+													type="submit"
+													className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+												>
+													Decline
+												</button>
+											</Form>
+										</div>
+									</div>
+								</div>
+							</div>
 						))}
-					</tbody>
-				</table>
-			</div>
+					</div>
+				</section>
+			)}
+
+			{acceptedInterviews.length > 0 && (
+				<section className="mb-8">
+					<h2 className="text-lg font-semibold text-gray-700 mb-4">Upcoming Interviews</h2>
+					<div className="space-y-4">
+						{acceptedInterviews.map(accepted => (
+							<div key={accepted.id} className="bg-white rounded-lg shadow overflow-hidden">
+								<div className="p-6">
+									<div className="flex justify-between items-start">
+										<div>
+											<h3 className="text-lg font-medium text-gray-900">{accepted.interview_name}</h3>
+											<p className="text-sm text-gray-600 mt-1">
+												{accepted.organization_name}
+											</p>
+											{accepted.interview_description && (
+												<p className="text-sm text-gray-600 mt-2">{accepted.interview_description}</p>
+											)}
+											<div className="mt-2 text-sm text-gray-600">
+												<p>Duration: {accepted.interview_duration}</p>
+												{accepted.interview_start_at && (
+													<p>Scheduled for: {new Date(accepted.interview_start_at).toLocaleString()}</p>
+												)}
+											</div>
+										</div>
+										<Link
+											to={`/candidate/interviews/${accepted.interview_id}`}
+											className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+										>
+											View Details
+										</Link>
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+				</section>
+			)}
+
+			{declinedInvitations.length > 0 && (
+				<section>
+					<h2 className="text-lg font-semibold text-gray-700 mb-4">Past Invitations</h2>
+					<div className="space-y-4">
+						{declinedInvitations.map(invitation => (
+							<div key={invitation.id} className="bg-white rounded-lg shadow overflow-hidden opacity-75">
+								<div className="p-6">
+									<div className="flex justify-between items-start">
+										<div>
+											<h3 className="text-lg font-medium text-gray-900">{invitation.interview_name}</h3>
+											<p className="text-sm text-gray-600 mt-1">
+												{invitation.organization_name}
+											</p>
+											{invitation.interview_description && (
+												<p className="text-sm text-gray-600 mt-2">{invitation.interview_description}</p>
+											)}
+											<div className="mt-2 text-sm text-gray-600">
+												<p>Duration: {invitation.interview_duration}</p>
+												{invitation.interview_start_at && (
+													<p>Scheduled for: {new Date(invitation.interview_start_at).toLocaleString()}</p>
+												)}
+											</div>
+											<p className="text-sm text-red-600 mt-2">Declined on {new Date(invitation.responded_at!).toLocaleDateString()}</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+				</section>
+			)}
+
+			{!pendingInvitations.length && !acceptedInterviews.length && !declinedInvitations.length && (
+				<div className="text-center py-12">
+					<h3 className="text-lg font-medium text-gray-900 mb-2">No interviews yet</h3>
+					<p className="text-gray-600">You'll see your interview invitations and scheduled interviews here.</p>
+				</div>
+			)}
 		</div>
 	);
 }
