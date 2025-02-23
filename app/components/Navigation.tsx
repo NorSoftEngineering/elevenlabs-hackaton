@@ -1,11 +1,11 @@
-import { Link } from 'react-router';
-import { useRole } from '~/contexts/RoleContext';
-import { isInterviewerRole } from '~/types/role';
-import { useState } from 'react';
-import { useOutletContext } from 'react-router';
-import type { OutletContext } from '~/types/context';
 import { Session } from '@supabase/supabase-js';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { useState } from 'react';
+import { Link } from 'react-router';
+import { useOutletContext } from 'react-router';
+import { useRole } from '~/contexts/RoleContext';
+import type { OutletContext } from '~/types/context';
+import { isInterviewerRole } from '~/types/role';
 
 export default function Navigation({ context }: { context: { session: Session; supabase: SupabaseClient } }) {
 	const { userRole, isLoading } = useRole();
@@ -70,9 +70,7 @@ export default function Navigation({ context }: { context: { session: Session; s
 								onClick={() => setIsDropdownOpen(!isDropdownOpen)}
 								className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20 focus:outline-none"
 							>
-								<span className="text-sm font-medium">
-									{context.session?.user.email?.[0].toUpperCase() || 'G'}
-								</span>
+								<span className="text-sm font-medium">{context.session?.user.email?.[0].toUpperCase() || 'G'}</span>
 							</button>
 
 							{isDropdownOpen && (
@@ -90,7 +88,12 @@ export default function Navigation({ context }: { context: { session: Session; s
 											role="menuitem"
 										>
 											<svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+												/>
 											</svg>
 											Logout
 										</button>

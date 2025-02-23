@@ -19,9 +19,9 @@ export default [
 	// Candidate routes
 	route('candidate', './routes/protected.candidate.tsx', [
 		route('dashboard', './screens/candidate/dashboard.tsx'),
-		// route('interviews', './screens/candidate/interviews.tsx'),
-		// route('profile', './screens/candidate/profile.tsx'),
-		// route('profile/edit', './screens/candidate/profile.edit.tsx'),
-		// route('interviews/:id', './screens/candidate/interview.tsx'),
+		route('interviews', './screens/candidate/interviews.tsx'),
+		route('profile', './screens/candidate/profile.tsx'),
+		route('profile/edit', './screens/candidate/profile.edit.tsx'),
+		route('interviews/:id', './screens/candidate/interview.tsx'),
 	]),
 ] satisfies RouteConfig;

@@ -1,7 +1,7 @@
-import { ReactNode } from 'react';
-import Navigation from './Navigation';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Session } from '@supabase/supabase-js';
+import { ReactNode } from 'react';
+import Navigation from './Navigation';
 
 type LayoutProps = {
 	children: ReactNode;
