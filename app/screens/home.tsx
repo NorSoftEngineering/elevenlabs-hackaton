@@ -12,6 +12,7 @@ import {
 	Users,
 	Zap,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -79,32 +80,63 @@ export default function LandingPage() {
 			{/* Hero Section */}
 			<section className="relative pt-32 pb-20 overflow-hidden">
 				<div className="absolute inset-0 bg-gradient-to-b from-[#C7E0FF]/20 to-transparent" />
-				<div className="absolute top-1/2 -left-64 w-96 h-96 bg-[#4A90E2]/20 rounded-full blur-3xl" />
-				<div className="absolute top-1/2 -right-64 w-96 h-96 bg-[#FFD166]/20 rounded-full blur-3xl" />
+				<motion.div 
+					initial={{ opacity: 0, x: -100, scale: 0.9 }}
+					animate={{ opacity: 0.2, x: 0, scale: 1 }}
+					transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1], delay: 0.2 }}
+					className="absolute top-1/2 -left-64 w-96 h-96 bg-[#4A90E2]/20 rounded-full blur-3xl" 
+				/>
+				<motion.div 
+					initial={{ opacity: 0, x: 100, scale: 0.9 }}
+					animate={{ opacity: 0.2, x: 0, scale: 1 }}
+					transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1], delay: 0.2 }}
+					className="absolute top-1/2 -right-64 w-96 h-96 bg-[#FFD166]/20 rounded-full blur-3xl" 
+				/>
 
 				<div className="container relative">
 					<div className="flex flex-col items-center text-center gap-8 max-w-4xl mx-auto">
-						<Badge
-							variant="secondary"
-							className="bg-white shadow-xl shadow-blue-100 border-slate-200/60 px-6 py-2 rounded-full"
+						<motion.div
+							initial={{ opacity: 0, y: 20 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5 }}
 						>
-							<Sparkles className="h-4 w-4 text-[#FFD166] mr-2" />
-							<span className="text-slate-800">AI-Powered Recruitment Platform</span>
-						</Badge>
+							<Badge
+								variant="secondary"
+								className="bg-white shadow-xl shadow-blue-100 border-slate-200/60 px-6 py-2 rounded-full"
+							>
+								<Sparkles className="h-4 w-4 text-[#FFD166] mr-2" />
+								<span className="text-slate-800">AI-Powered Recruitment Platform</span>
+							</Badge>
+						</motion.div>
 
-						<h1 className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+						<motion.h1 
+							initial={{ opacity: 0, y: 20 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5, delay: 0.2 }}
+							className="text-5xl md:text-7xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent"
+						>
 							Hire Smarter,{' '}
 							<span className="bg-gradient-to-r from-[#4A90E2] to-[#7FB3FF] bg-clip-text text-transparent">
 								Move Faster
 							</span>
-						</h1>
+						</motion.h1>
 
-						<p className="text-xl text-slate-600 max-w-2xl">
+						<motion.p 
+							initial={{ opacity: 0, y: 20 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5, delay: 0.4 }}
+							className="text-xl text-slate-600 max-w-2xl"
+						>
 							Transform your recruitment process with AI-powered scheduling, intelligent screening, and automated
 							feedback. The future of hiring is here.
-						</p>
+						</motion.p>
 
-						<div className="flex gap-6 mt-4">
+						<motion.div 
+							initial={{ opacity: 0, y: 20 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5, delay: 0.6 }}
+							className="flex gap-6 mt-4"
+						>
 							<Link to="/login">
 								<Button
 									size="lg"
@@ -121,22 +153,33 @@ export default function LandingPage() {
 							>
 								Watch Demo
 							</Button>
-						</div>
+						</motion.div>
 
-						<div className="grid grid-cols-3 gap-8 mt-12 w-full">
+						<motion.div 
+							initial={{ opacity: 0, y: 20 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.5, delay: 0.8 }}
+							className="grid grid-cols-3 gap-8 mt-12 w-full"
+						>
 							{[
 								{ number: '85%', label: 'Time Saved' },
 								{ number: '2.5x', label: 'Faster Hiring' },
 								{ number: '93%', label: 'Satisfaction Rate' },
 							].map((stat, index) => (
-								<div key={index} className="flex flex-col items-center gap-2">
+								<motion.div 
+									key={index} 
+									className="flex flex-col items-center gap-2"
+									initial={{ opacity: 0, y: 20 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={{ duration: 0.5, delay: 0.8 + index * 0.1 }}
+								>
 									<span className="text-4xl font-bold bg-gradient-to-r from-[#4A90E2] to-[#7FB3FF] bg-clip-text text-transparent">
 										{stat.number}
 									</span>
 									<span className="text-slate-600">{stat.label}</span>
-								</div>
+								</motion.div>
 							))}
-						</div>
+						</motion.div>
 					</div>
 				</div>
 			</section>
@@ -144,7 +187,13 @@ export default function LandingPage() {
 			{/* Features Section */}
 			<section id="features" className="py-32 relative">
 				<div className="container">
-					<div className="text-center mb-20">
+					<motion.div 
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true, amount: 0.2 }}
+						transition={{ duration: 0.5, delay: 0.5 }}
+						className="text-center mb-20"
+					>
 						<Badge variant="secondary" className="bg-white shadow-lg shadow-blue-100 px-6 py-2 rounded-full mb-6">
 							<Zap className="h-4 w-4 text-[#FFD166] mr-2" />
 							<span className="text-slate-800">Powerful Features</span>
@@ -155,7 +204,7 @@ export default function LandingPage() {
 						<p className="text-slate-600 max-w-2xl mx-auto text-lg">
 							Our AI agents handle the complexity, so you can focus on what matters most - finding the right talent
 						</p>
-					</div>
+					</motion.div>
 
 					<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
 						{[
@@ -197,19 +246,39 @@ export default function LandingPage() {
 								gradient: 'from-[#FFD166] to-[#FFE4A0]',
 							},
 						].map((feature, index) => (
-							<Card
+							<motion.div
 								key={index}
-								className="p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white/60 backdrop-blur-sm border-slate-200/60"
+								initial={{ opacity: 0, y: 20 }}
+								whileInView={{ opacity: 1, y: 0 }}
+								viewport={{ once: true, amount: 0.2 }}
+								transition={{ duration: 0.5, delay: 0.8 + index * 0.1 }}
 							>
-								<div className="relative w-fit mb-6">
-									<div className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} blur-lg opacity-40`} />
-									<div className={`relative bg-gradient-to-r ${feature.gradient} p-3 rounded-2xl`}>
-										<feature.icon className="h-7 w-7 text-white" />
+								<Card
+									className="p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white/60 backdrop-blur-sm border-slate-200/60 group"
+								>
+									<div className="relative w-fit mb-6">
+										<motion.div 
+											initial={{ scale: 0.8, opacity: 0 }}
+											whileInView={{ scale: 1, opacity: 0.4 }}
+											viewport={{ once: true, amount: 0.2 }}
+											transition={{ duration: 0.5, delay: 0.8 + index * 0.1 }}
+											className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} blur-lg`} 
+										/>
+										<div className={`relative bg-gradient-to-r ${feature.gradient} p-3 rounded-2xl`}>
+											<feature.icon className="h-7 w-7 text-white" />
+										</div>
 									</div>
-								</div>
-								<h3 className="font-semibold text-xl mb-3 text-slate-800">{feature.title}</h3>
-								<p className="text-slate-600 leading-relaxed">{feature.description}</p>
-							</Card>
+									<motion.div
+										initial={{ opacity: 0, y: 10 }}
+										whileInView={{ opacity: 1, y: 0 }}
+										viewport={{ once: true, amount: 0.2 }}
+										transition={{ duration: 0.5, delay: 1 + index * 0.1 }}
+									>
+										<h3 className="font-semibold text-xl mb-3 text-slate-800">{feature.title}</h3>
+										<p className="text-slate-600 leading-relaxed">{feature.description}</p>
+									</motion.div>
+								</Card>
+							</motion.div>
 						))}
 					</div>
 				</div>
