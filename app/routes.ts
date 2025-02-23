@@ -14,6 +14,7 @@ export default [
 	// Protected dashboard routes (for interviewers)
 	route('dashboard', './routes/protected.interviewer.tsx', [
 		index('./screens/dashboard.tsx'),
+		route('orgs', './screens/dashboard/orgs.tsx'),
 		route('orgs/new', './screens/orgs.new.tsx'),
 		route('orgs/:slug/settings', './screens/orgs.settings.tsx'),
 		route('orgs/:slug/members', './screens/orgs.members.tsx'),
