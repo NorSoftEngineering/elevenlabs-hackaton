@@ -1,3 +1,4 @@
+import { Dialog } from '@headlessui/react';
 import React from 'react';
 import { Link } from 'react-router';
 import {
@@ -12,12 +13,11 @@ import {
 	useSubmit,
 } from 'react-router';
 import { toast } from 'sonner';
+import { CandidateProfile as CandidateProfileComponent } from '~/components/CandidateProfile';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { InterviewSchedule } from '~/components/InterviewSchedule';
-import { type InterviewWithRelations, type CandidateProfile } from '~/types/interview';
+import { type CandidateProfile, type InterviewWithRelations } from '~/types/interview';
 import { createSupabaseServer } from '~/utils/supabase.server';
-import { CandidateProfile as CandidateProfileComponent } from '~/components/CandidateProfile';
-import { Dialog } from '@headlessui/react';
 
 export { ErrorBoundary };
 
@@ -79,23 +79,25 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 			candidate: {
 				id: c.profile_id,
 				email: c.email,
-				candidate_profile: [{
-					id: c.candidate_profile_id,
-					profile_id: c.profile_id,
-					name: c.name,
-					phone: c.phone,
-					title: c.title,
-					experience_years: c.experience_years,
-					skills: c.skills,
-					bio: c.bio,
-					location: c.location,
-					resume_url: c.resume_url,
-					resume_filename: c.resume_filename,
-					created_at: c.profile_created_at,
-					updated_at: c.profile_updated_at
-				}].filter(p => p.id) // Only include if profile exists
-			}
-		}))
+				candidate_profile: [
+					{
+						id: c.candidate_profile_id,
+						profile_id: c.profile_id,
+						name: c.name,
+						phone: c.phone,
+						title: c.title,
+						experience_years: c.experience_years,
+						skills: c.skills,
+						bio: c.bio,
+						location: c.location,
+						resume_url: c.resume_url,
+						resume_filename: c.resume_filename,
+						created_at: c.profile_created_at,
+						updated_at: c.profile_updated_at,
+					},
+				].filter(p => p.id), // Only include if profile exists
+			},
+		})),
 	};
 
 	return { interview: transformedInterview as unknown as InterviewWithRelations, role: orgMember.role };
@@ -460,9 +462,9 @@ export default function InterviewScreen() {
 		submit(formData, { method: 'post' });
 	};
 
-  const selectedCandidate = interview.candidates?.find(c => c.candidate.id === selectedCandidateId);
-  console.log(selectedCandidate);
-  console.log(interview.candidates);
+	const selectedCandidate = interview.candidates?.find(c => c.candidate.id === selectedCandidateId);
+	console.log(selectedCandidate);
+	console.log(interview.candidates);
 
 	return (
 		<div className="p-6 max-w-6xl mx-auto">
@@ -611,7 +613,8 @@ export default function InterviewScreen() {
 							{selectedCandidateId && (
 								<>
 									{(() => {
-										const profile = interview.candidates?.find(c => c.candidate.id === selectedCandidateId)?.candidate.candidate_profile?.[0];
+										const profile = interview.candidates?.find(c => c.candidate.id === selectedCandidateId)?.candidate
+											.candidate_profile?.[0];
 										if (!profile) return <div className="text-gray-500">No profile information available</div>;
 										return <CandidateProfileComponent profile={profile} />;
 									})()}

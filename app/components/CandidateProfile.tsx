@@ -54,10 +54,7 @@ export function CandidateProfile({ profile, className = '' }: CandidateProfilePr
 						<h3 className="text-sm font-medium text-gray-500 mb-2">Skills</h3>
 						<div className="flex flex-wrap gap-2">
 							{profile.skills.map((skill: string, index: number) => (
-								<span
-									key={index}
-									className="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm"
-								>
+								<span key={index} className="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm">
 									{skill}
 								</span>
 							))}
@@ -90,4 +87,4 @@ export function CandidateProfile({ profile, className = '' }: CandidateProfilePr
 			</div>
 		</div>
 	);
-} 
+}
