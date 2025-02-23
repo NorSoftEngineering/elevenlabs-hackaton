@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import {
 	ArrowRight,
 	Bot,
@@ -12,7 +13,6 @@ import {
 	Users,
 	Zap,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { Link } from 'react-router';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -31,19 +31,22 @@ export default function LandingPage() {
 			name: 'Sarah Chen',
 			role: 'Head of Talent, TechCorp',
 			image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=200&h=200&fit=crop',
-			quote: 'TalentBud has cut our hiring time in half. The AI scheduling and screening are game-changers for our recruitment process.',
+			quote:
+				'TalentBud has cut our hiring time in half. The AI scheduling and screening are game-changers for our recruitment process.',
 		},
 		{
 			name: 'Marcus Rodriguez',
 			role: 'HR Director, InnovateCo',
 			image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&h=200&fit=crop',
-			quote: 'The voice-based screening saved us countless hours. We can now focus on meaningful interactions with top candidates.',
+			quote:
+				'The voice-based screening saved us countless hours. We can now focus on meaningful interactions with top candidates.',
 		},
 		{
 			name: 'Emily Watson',
 			role: 'Recruiting Manager, StartupX',
 			image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&h=200&fit=crop',
-			quote: 'The analytics dashboard gives us incredible insights. We\'ve improved our hiring success rate by 40% since using TalentBud.',
+			quote:
+				"The analytics dashboard gives us incredible insights. We've improved our hiring success rate by 40% since using TalentBud.",
 		},
 	];
 
@@ -80,26 +83,22 @@ export default function LandingPage() {
 			{/* Hero Section */}
 			<section className="relative pt-32 pb-20 overflow-hidden">
 				<div className="absolute inset-0 bg-gradient-to-b from-[#C7E0FF]/20 to-transparent" />
-				<motion.div 
+				<motion.div
 					initial={{ opacity: 0, x: -100, scale: 0.9 }}
 					animate={{ opacity: 0.2, x: 0, scale: 1 }}
 					transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1], delay: 0.2 }}
-					className="absolute top-1/2 -left-64 w-96 h-96 bg-[#4A90E2]/20 rounded-full blur-3xl" 
+					className="absolute top-1/2 -left-64 w-96 h-96 bg-[#4A90E2]/20 rounded-full blur-3xl"
 				/>
-				<motion.div 
+				<motion.div
 					initial={{ opacity: 0, x: 100, scale: 0.9 }}
 					animate={{ opacity: 0.2, x: 0, scale: 1 }}
 					transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1], delay: 0.2 }}
-					className="absolute top-1/2 -right-64 w-96 h-96 bg-[#FFD166]/20 rounded-full blur-3xl" 
+					className="absolute top-1/2 -right-64 w-96 h-96 bg-[#FFD166]/20 rounded-full blur-3xl"
 				/>
 
 				<div className="container relative">
 					<div className="flex flex-col items-center text-center gap-8 max-w-4xl mx-auto">
-						<motion.div
-							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.5 }}
-						>
+						<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
 							<Badge
 								variant="secondary"
 								className="bg-white shadow-xl shadow-blue-100 border-slate-200/60 px-6 py-2 rounded-full"
@@ -109,7 +108,7 @@ export default function LandingPage() {
 							</Badge>
 						</motion.div>
 
-						<motion.h1 
+						<motion.h1
 							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5, delay: 0.2 }}
@@ -121,7 +120,7 @@ export default function LandingPage() {
 							</span>
 						</motion.h1>
 
-						<motion.p 
+						<motion.p
 							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5, delay: 0.4 }}
@@ -131,7 +130,7 @@ export default function LandingPage() {
 							feedback. The future of hiring is here.
 						</motion.p>
 
-						<motion.div 
+						<motion.div
 							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5, delay: 0.6 }}
@@ -155,7 +154,7 @@ export default function LandingPage() {
 							</Button>
 						</motion.div>
 
-						<motion.div 
+						<motion.div
 							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5, delay: 0.8 }}
@@ -166,8 +165,8 @@ export default function LandingPage() {
 								{ number: '2.5x', label: 'Faster Hiring' },
 								{ number: '93%', label: 'Satisfaction Rate' },
 							].map((stat, index) => (
-								<motion.div 
-									key={index} 
+								<motion.div
+									key={index}
 									className="flex flex-col items-center gap-2"
 									initial={{ opacity: 0, y: 20 }}
 									animate={{ opacity: 1, y: 0 }}
@@ -187,7 +186,7 @@ export default function LandingPage() {
 			{/* Features Section */}
 			<section id="features" className="py-32 relative">
 				<div className="container">
-					<motion.div 
+					<motion.div
 						initial={{ opacity: 0, y: 20 }}
 						whileInView={{ opacity: 1, y: 0 }}
 						viewport={{ once: true, amount: 0.2 }}
@@ -253,16 +252,14 @@ export default function LandingPage() {
 								viewport={{ once: true, amount: 0.2 }}
 								transition={{ duration: 0.5, delay: 0.8 + index * 0.1 }}
 							>
-								<Card
-									className="p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white/60 backdrop-blur-sm border-slate-200/60 group"
-								>
+								<Card className="p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white/60 backdrop-blur-sm border-slate-200/60 group">
 									<div className="relative w-fit mb-6">
-										<motion.div 
+										<motion.div
 											initial={{ scale: 0.8, opacity: 0 }}
 											whileInView={{ scale: 1, opacity: 0.4 }}
 											viewport={{ once: true, amount: 0.2 }}
 											transition={{ duration: 0.5, delay: 0.8 + index * 0.1 }}
-											className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} blur-lg`} 
+											className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} blur-lg`}
 										/>
 										<div className={`relative bg-gradient-to-r ${feature.gradient} p-3 rounded-2xl`}>
 											<feature.icon className="h-7 w-7 text-white" />
@@ -362,26 +359,17 @@ export default function LandingPage() {
 							>
 								<div className="flex items-center gap-4 mb-6">
 									<div className="relative w-14 h-14 rounded-full overflow-hidden bg-gradient-to-r from-[#4A90E2] to-[#7FB3FF]">
-										<img
-											src={testimonial.image}
-											alt={testimonial.name}
-											className="w-full h-full object-cover"
-										/>
+										<img src={testimonial.image} alt={testimonial.name} className="w-full h-full object-cover" />
 									</div>
 									<div>
 										<h4 className="font-semibold text-slate-800">{testimonial.name}</h4>
 										<p className="text-sm text-slate-600">{testimonial.role}</p>
 									</div>
 								</div>
-								<blockquote className="text-slate-600 leading-relaxed italic">
-									"{testimonial.quote}"
-								</blockquote>
+								<blockquote className="text-slate-600 leading-relaxed italic">"{testimonial.quote}"</blockquote>
 								<div className="flex gap-1 mt-6">
 									{Array.from({ length: 5 }).map((_, i) => (
-										<Star
-											key={i}
-											className="h-5 w-5 fill-[#FFD166] text-[#FFD166]"
-										/>
+										<Star key={i} className="h-5 w-5 fill-[#FFD166] text-[#FFD166]" />
 									))}
 								</div>
 							</Card>
