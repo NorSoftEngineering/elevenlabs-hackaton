@@ -145,13 +145,15 @@ export default function LandingPage() {
 									<ArrowRight className="ml-2 h-5 w-5" />
 								</Button>
 							</Link>
-							<Button
-								size="lg"
-								variant="outline"
-								className="h-14 px-8 rounded-full text-lg border-slate-300 hover:bg-slate-100/80"
-							>
-								Watch Demo
-							</Button>
+							<a href="https://www.youtube.com/watch?v=N5XgMituaKk" target="_blank" rel="noopener noreferrer">
+								<Button
+									size="lg"
+									variant="outline"
+									className="h-14 px-8 rounded-full text-lg border-slate-300 hover:bg-slate-100/80"
+								>
+									Watch Demo
+								</Button>
+							</a>
 						</motion.div>
 
 						<motion.div
