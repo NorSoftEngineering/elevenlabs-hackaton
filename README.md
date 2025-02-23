@@ -1,10 +1,86 @@
-# React Router DnB Stack
+# TalentBud 🚀
 
-![The React Router DnB Stack](https://github.com/robipop22/dnb-stack/blob/main/dnb-stack-preview.png?raw=true)
+TalentBud is an AI-powered recruitment platform that helps companies hire smarter and move faster. Transform your recruitment process with intelligent scheduling, automated screening, and data-driven insights.
 
-See it live: https://dnb-stack.vercel.app/
+## Features ✨
 
-Learn more about [React Router Stacks](https://React Router.run/stacks).
+- **AI Scheduling Assistant** - Eliminate back-and-forth emails with intelligent scheduling
+- **Voice-Based Screening** - 24/7 AI-powered preliminary interviews
+- **Smart CV Enhancement** - AI suggestions to improve candidate profiles
+- **Instant Reports** - Comprehensive interview summaries and evaluations
+- **Analytics Dashboard** - Data-driven hiring pipeline insights
+- **Collaborative Hiring** - Team-wide feedback and evaluation sharing
+
+## Tech Stack 🛠
+
+- **Frontend**
+  - React 19
+  - React Router 7
+  - TypeScript
+  - Tailwind CSS
+  - Framer Motion
+  - Headless UI
+  - Lucide Icons
+  - Sonner (Toasts)
+  - Recharts (Analytics)
+
+- **Backend & Infrastructure**
+  - Supabase (Auth & Database)
+  - OpenAI
+  - Eleven Labs (Voice AI)
+
+- **Testing & Quality**
+  - Vitest
+  - Cypress
+  - Testing Library
+  - Biome (Linting)
+  - Husky (Git Hooks)
+
+## Getting Started 🏁
+
+1. Clone the repository
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env
+# Add your API keys and configuration
+```
+
+4. Start the development server:
+```bash
+npm run dev
+```
+
+## Development Commands 💻
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run test` - Run tests
+- `npm run test:coverage` - Run tests with coverage
+- `npm run lint` - Run linter
+- `npm run cypress:open` - Open Cypress test runner
+- `npm run cypress:run` - Run Cypress tests headlessly
+
+## Contributing 🤝
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License 📝
+
+This project is proprietary software. All rights reserved.
+
+## Contact 📧
+
+For support or inquiries, please reach out to our team.
 
 ```sh
 bunx create-react-router@latest --template robipop22/dnb-stack
