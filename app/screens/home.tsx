@@ -1,20 +1,20 @@
-import { Link } from 'react-router';
-import { Button } from '~/components/ui/button';
-import { Card } from '~/components/ui/card';
-import { Badge } from '~/components/ui/badge';
 import {
-	Calendar,
-	FileText,
-	Mic,
-	Clock,
 	ArrowRight,
 	Bot,
-	Users,
+	Calendar,
 	ChevronRight,
-	Sparkles,
+	Clock,
+	FileText,
 	LineChart,
+	Mic,
+	Sparkles,
+	Users,
 	Zap,
 } from 'lucide-react';
+import { Link } from 'react-router';
+import { Badge } from '~/components/ui/badge';
+import { Button } from '~/components/ui/button';
+import { Card } from '~/components/ui/card';
 
 export default function LandingPage() {
 	return (
