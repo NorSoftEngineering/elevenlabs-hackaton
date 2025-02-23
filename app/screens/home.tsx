@@ -20,12 +20,12 @@ export default function LandingPage() {
 	return (
 		<div className="flex flex-col min-h-screen bg-white">
 			{/* Header */}
-			<header className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-slate-200/50">
+			<header className="fixed top-0 w-full z-100 bg-white/70 backdrop-blur-xl border-b border-slate-200/50">
 				<div className="container flex h-20 items-center justify-between">
 					<div className="flex items-center gap-2">
 						<div className="relative">
 							<div className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#4A90E2] to-[#7FB3FF] blur-lg opacity-40" />
-							<Bot className="h-8 w-8 text-[#4A90E2] relative" />
+							<img src="/talentbud-logo.png" alt="logo" className="h-8 w-8 text-[#4A90E2] relative" />
 						</div>
 						<span className="text-xl font-bold bg-gradient-to-r from-[#4A90E2] to-[#7FB3FF] bg-clip-text text-transparent">
 							TalentBud

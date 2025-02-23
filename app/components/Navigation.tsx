@@ -29,11 +29,12 @@ export default function Navigation({ context }: { context: { session: Session; s
 	const links = isInterviewerRole(userRole) ? interviewerLinks : candidateLinks;
 
 	return (
-		<nav className="bg-white shadow fixed top-0 left-0 right-0 z-50 w-full">
+		<nav className="bg-white shadow fixed top-0 left-0 right-0 z-50 w-full hidden sm:block">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex justify-between h-16">
 					<div className="flex">
 						<div className="flex-shrink-0 flex items-center">
+							<img src="/talentbud-logo.png" alt="logo" className="h-8 w-8 text-[#4A90E2] relative" />
 							<Link to="/" className="text-xl font-bold text-brand-primary">
 								TalentBud
 							</Link>
