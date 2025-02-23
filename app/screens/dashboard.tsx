@@ -133,7 +133,10 @@ export default function DashboardScreen() {
 						</div>
 					</div>
 					<div className="bg-brand-neutral/10 px-5 py-3">
-						<Link to="/dashboard/interviews" className="text-sm font-medium text-brand-primary hover:text-brand-primary/80">
+						<Link
+							to="/dashboard/interviews"
+							className="text-sm font-medium text-brand-primary hover:text-brand-primary/80"
+						>
 							View candidates
 						</Link>
 					</div>
@@ -163,7 +166,10 @@ export default function DashboardScreen() {
 						</div>
 					</div>
 					<div className="bg-brand-neutral/10 px-5 py-3">
-						<Link to="/dashboard/analytics" className="text-sm font-medium text-brand-primary hover:text-brand-primary/80">
+						<Link
+							to="/dashboard/analytics"
+							className="text-sm font-medium text-brand-primary hover:text-brand-primary/80"
+						>
 							View analytics
 						</Link>
 					</div>
@@ -195,7 +201,10 @@ export default function DashboardScreen() {
 						</div>
 					</div>
 					<div className="bg-brand-neutral/10 px-5 py-3">
-						<Link to="/dashboard/analytics" className="text-sm font-medium text-brand-primary hover:text-brand-primary/80">
+						<Link
+							to="/dashboard/analytics"
+							className="text-sm font-medium text-brand-primary hover:text-brand-primary/80"
+						>
 							View metrics
 						</Link>
 					</div>
@@ -254,7 +263,8 @@ export default function DashboardScreen() {
 															to={`/dashboard/interviews/${interview.id}`}
 															className="font-medium text-gray-900 hover:text-brand-primary"
 														>
-															{interview.candidates?.[0]?.candidate?.candidate_profiles?.[0]?.name || 'Unknown'} - {interview.name}
+															{interview.candidates?.[0]?.candidate?.candidate_profiles?.[0]?.name || 'Unknown'} -{' '}
+															{interview.name}
 														</Link>
 													</p>
 												</div>
@@ -262,7 +272,8 @@ export default function DashboardScreen() {
 													<time dateTime={interview.created_at}>
 														{new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(
 															Math.round(
-																(new Date(interview.created_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
+																(new Date(interview.created_at).getTime() - new Date().getTime()) /
+																	(1000 * 60 * 60 * 24),
 															),
 															'days',
 														)}
@@ -270,7 +281,9 @@ export default function DashboardScreen() {
 												</div>
 											</div>
 										</div>
-										{idx < recentInterviews.length - 1 && <div className="absolute left-4 top-8 -ml-px h-full w-0.5 bg-gray-200" />}
+										{idx < recentInterviews.length - 1 && (
+											<div className="absolute left-4 top-8 -ml-px h-full w-0.5 bg-gray-200" />
+										)}
 									</li>
 								))}
 							</ul>
