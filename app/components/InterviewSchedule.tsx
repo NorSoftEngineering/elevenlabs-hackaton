@@ -9,7 +9,7 @@ type Props = {
 	onSchedule?: (date: string) => void;
 };
 
-export function InterviewSchedule({ interview, canEdit = false, onSchedule }: Props) {
+export function InterviewSchedule({ interview, onSchedule }: Props) {
 	const [isOpen, setIsOpen] = useState(false);
 
 	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

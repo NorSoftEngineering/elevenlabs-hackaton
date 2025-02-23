@@ -1,4 +1,4 @@
-import { redirect, type ActionFunctionArgs } from 'react-router';
+import { type ActionFunctionArgs, redirect } from 'react-router';
 import { createSupabaseServer } from '~/utils/supabase.server';
 
 export async function action({ request }: ActionFunctionArgs) {

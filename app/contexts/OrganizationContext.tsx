@@ -126,12 +126,12 @@ export function OrganizationProvider({ children, env }: OrganizationProviderProp
 
 		async function loadUserRole() {
 			try {
-				if (!user) return;
+				if (!user || !currentOrganization?.id) return;
 
 				const { data, error } = await supabase
 					.from('organization_members')
 					.select('role')
-					.eq('organization_id', currentOrganization!.id)
+					.eq('organization_id', currentOrganization.id)
 					.eq('user_id', user.id)
 					.single();
 

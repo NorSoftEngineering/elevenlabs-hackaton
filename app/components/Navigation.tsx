@@ -1,23 +1,18 @@
 import { Session } from '@supabase/supabase-js';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useOutletContext } from 'react-router';
+import { Form } from 'react-router';
 import { useRole } from '~/contexts/RoleContext';
 import type { OutletContext } from '~/types/context';
 import { isInterviewerRole } from '~/types/role';
 import { OrganizationSelector } from './OrganizationSelector';
-import { Form } from 'react-router';
-import { LogOut } from 'lucide-react';
 
 export default function Navigation({ context }: { context: { session: Session; supabase: SupabaseClient } }) {
 	const { userRole, isLoading } = useRole();
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-	const handleSignOut = async () => {
-		await context.supabase.auth.signOut();
-		// The auth state change in root.tsx will trigger a page reload
-	};
 
 	if (isLoading) return null;
 
