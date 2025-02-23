@@ -2,6 +2,7 @@ import { Outlet, redirect } from 'react-router';
 import { isCandidateRole } from '~/types/role';
 import { getSupabaseEnv } from '~/utils/env.server';
 import { createSupabaseServer } from '~/utils/supabase.server';
+import ErrorScreen from '../screens/error';
 
 export const loader = async ({ request }: { request: Request }) => {
 	const headers = new Headers();
@@ -28,6 +29,8 @@ export const loader = async ({ request }: { request: Request }) => {
 
 	return { env: getSupabaseEnv() };
 };
+
+export { ErrorScreen as ErrorBoundary };
 
 export default function ProtectedCandidateLayout() {
 	return <Outlet />;
