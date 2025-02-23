@@ -246,9 +246,29 @@ export async function action({ request }: ActionFunctionArgs) {
 		}
 
 		case 'end': {
-			const { error } = await supabase.from('interviews').update({ status: 'done' }).eq('id', interviewId);
+			// Update interview status to done
+			const { error: updateError } = await supabase.from('interviews').update({ status: 'done' }).eq('id', interviewId);
 
-			if (error) throw new Response('Failed to end interview', { status: 500 });
+			if (updateError) {
+				console.error('Failed to end interview:', updateError);
+				throw new Response('Failed to end interview', { status: 500 });
+			}
+
+			// Call the webhook with the interview ID
+			try {
+				const webhookUrl = new URL('https://hook.eu2.make.com/hlpslpduawqueyo9m5nl1fdxsbq1lbs6');
+				webhookUrl.searchParams.append('interviewId', interviewId as string);
+
+				const webhookResponse = await fetch(webhookUrl.toString());
+				if (!webhookResponse.ok) {
+					console.error('Webhook call failed:', await webhookResponse.text());
+					// We don't throw here as the interview is already ended
+				}
+			} catch (webhookError) {
+				console.error('Failed to call webhook:', webhookError);
+				// We don't throw here as the interview is already ended
+			}
+
 			return redirect('/protected/interviews');
 		}
 
@@ -562,8 +582,14 @@ export default function AgentRoute() {
 		if (!interview?.id) return;
 
 		try {
+			// End the ElevenLabs conversation first
+			await conversation.endSession();
+
+			// Clean up UI state
 			setIsPaused(false);
 			setMessages([]);
+
+			// Submit the end action with the interview ID
 			submit(
 				{
 					intent: 'end',
@@ -571,7 +597,6 @@ export default function AgentRoute() {
 				},
 				{ method: 'post' },
 			);
-			await conversation.endSession();
 		} catch (err) {
 			console.error('Failed to end session:', err);
 			setError('Failed to end conversation');
