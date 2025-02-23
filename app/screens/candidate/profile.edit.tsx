@@ -81,9 +81,7 @@ export async function action({ request }: ActionFunctionArgs) {
 			}
 
 			// Get the public URL
-			const {
-				data,
-			} = await supabase.storage.from('resumes').createSignedUrl(fileName, 60 * 60 * 24 * 30); // 30 days
+			const { data } = await supabase.storage.from('resumes').createSignedUrl(fileName, 60 * 60 * 24 * 30); // 30 days
 
 			if (!data) {
 				throw new Error('Failed to get signed URL');
@@ -99,6 +97,9 @@ export async function action({ request }: ActionFunctionArgs) {
 			try {
 				const res = await fetch(`https://hook.eu2.make.com/fym5x7z7tbtwd6i5ibgtw1zqm8imb2ji`, {
 					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
 					body: JSON.stringify({
 						id_candidate: session.user.id,
 						email: session.user.email,
