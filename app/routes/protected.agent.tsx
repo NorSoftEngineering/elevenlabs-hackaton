@@ -1,4 +1,4 @@
-import { Form, redirect, useLoaderData, useNavigation, useSubmit } from 'react-router';
+import { Form, redirect, useLoaderData, useNavigation, useSubmit, useActionData } from 'react-router';
 
 import { useConversation } from '@11labs/react';
 import { CheckCircle2, Circle, Mic, Pause, Play, Send, Volume2, X } from 'lucide-react';
@@ -7,7 +7,6 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { LottieAvatar } from '~/components/LottieAvatar';
 import { Card } from '~/components/ui/card';
 import { cn } from '~/lib/utils';
-import { getEnv } from '~/utils/env.server';
 import { analyzeCheckpointCompletion } from '~/utils/openai.server';
 import { createSupabaseServer } from '~/utils/supabase.server';
 
@@ -22,7 +21,7 @@ function normalizeMessageSource(source: string): MessageSource {
 type Message = {
 	id: string;
 	text: string;
-	source: MessageSource;
+	source: string;
 	timestamp: number;
 };
 
@@ -38,7 +37,13 @@ type DBMessage = {
 	timestamp: string;
 };
 
+type Agent = {
+	agent_id: string;
+	name: string;
+};
+
 type CheckpointAnalysis = {
+	summary: string;
 	score: number;
 	feedback: {
 		covered: string[];
@@ -46,6 +51,19 @@ type CheckpointAnalysis = {
 		suggestions: string[];
 	};
 	confidence: number;
+};
+
+type Interview = {
+	id: string;
+	status: string;
+	currentCheckpoint: number;
+	messages: Message[];
+	interview_checkpoints: {
+		id: string;
+		checkpoint_id: number;
+		completed_at: string | null;
+		analysis?: CheckpointAnalysis;
+	}[];
 };
 
 type InterviewData = {
@@ -89,39 +107,13 @@ const CHECKPOINTS = [
 ];
 
 type LoaderData = {
-	signedUrl: string;
-	organizationId: string;
-	interview: {
-		id: string;
-		status: string;
-		currentCheckpoint: number;
-		messages: Message[];
-		interview_checkpoints: {
-			id: string;
-			checkpoint_id: number;
-			completed_at: string | null;
-			analysis?: CheckpointAnalysis;
-		}[];
-	} | null;
+	interview: Interview | null;
+	agents: Agent[];
+	selectedAgentId: string | null;
 };
 
-interface DynamicVariables {
-	user_name: string;
-	job: string;
-}
-
 export async function loader({ request }: LoaderFunctionArgs) {
-	const headers = new Headers();
-	const supabase = createSupabaseServer(request, headers);
-
-	const {
-		data: { session },
-		error,
-	} = await supabase.auth.getSession();
-
-	if (!session || error) {
-		throw new Response('Unauthorized', { status: 401 });
-	}
+	const supabase = createSupabaseServer(request, new Headers());
 
 	// Hardcoded interview ID
 	const INTERVIEW_ID = '43ad56de-b836-4fb4-b534-62fbd35e1d60';
@@ -137,55 +129,39 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		.eq('id', INTERVIEW_ID)
 		.single()) as { data: InterviewData | null };
 
-	// Get signed URL from ElevenLabs
-	const { ELEVEN_LABS_API_KEY, ELEVEN_LABS_AGENT_ID } = getEnv();
+	const AGENTS = [
+		{
+			agent_id: 'Zpp6J4Xq3NpEhs266fpy',
+			name: 'Hope Female American',
+		},
+		{
+			agent_id: 'ybrNX1zWwwqwgMAGc0lm',
+			name: 'Eric Male Laidback American',
+		},
+	];
 
-	try {
-		const response = await fetch(
-			`https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${ELEVEN_LABS_AGENT_ID}`,
-			{
-				method: 'GET',
-				headers: {
-					'xi-api-key': ELEVEN_LABS_API_KEY,
-				},
-			},
-		);
-
-		if (!response.ok) {
-			throw new Response('Failed to get signed URL from ElevenLabs', {
-				status: response.status,
-			});
-		}
-
-		const body = await response.json();
-
-		return {
-			signedUrl: body.signed_url,
-			organizationId: 'c949eba5-e3da-41d4-8b93-6ebe7bbf46b0',
-			interview: interview
-				? {
-						id: interview.id,
-						status: interview.status,
-						currentCheckpoint: interview.interview_checkpoints.length,
-						messages: (interview.messages || []).map((msg: DBMessage) => ({
-							id: msg.id,
-							text: msg.message,
-							source: normalizeMessageSource(msg.source),
-							timestamp: new Date(msg.timestamp).getTime(),
-						})),
-						interview_checkpoints: interview.interview_checkpoints.map((cp: any) => ({
-							id: cp.id,
-							checkpoint_id: cp.checkpoint_id,
-							completed_at: cp.completed_at,
-							analysis: cp.analysis,
-						})),
-					}
-				: null,
-		};
-	} catch (error) {
-		console.error('Error getting signed URL:', error);
-		throw new Response('Failed to get signed URL', { status: 500 });
-	}
+	return {
+		agents: AGENTS,
+		interview: interview
+			? {
+					id: interview.id,
+					status: interview.status,
+					currentCheckpoint: interview.interview_checkpoints.length,
+					messages: (interview.messages || []).map((msg: DBMessage) => ({
+						id: msg.id,
+						text: msg.message,
+						source: normalizeMessageSource(msg.source),
+						timestamp: new Date(msg.timestamp).getTime(),
+					})),
+					interview_checkpoints: interview.interview_checkpoints.map((cp: any) => ({
+						id: cp.id,
+						checkpoint_id: cp.checkpoint_id,
+						completed_at: cp.completed_at,
+						analysis: cp.analysis,
+					})),
+				}
+			: null,
+	};
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -193,8 +169,7 @@ export async function action({ request }: ActionFunctionArgs) {
 	const intent = formData.get('intent');
 	const interviewId = formData.get('interviewId');
 
-	const headers = new Headers();
-	const supabase = createSupabaseServer(request, headers);
+	const supabase = createSupabaseServer(request, new Headers());
 
 	switch (intent) {
 		case 'start': {
@@ -384,40 +359,33 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function AgentRoute() {
-	const { signedUrl, interview } = useLoaderData<LoaderData>();
+	const { interview, agents } = useLoaderData<LoaderData>();
+	const actionData = useActionData<typeof action>();
 	const submit = useSubmit();
+	const navigation = useNavigation();
 	const [error, setError] = useState<string | null>(null);
 	const [messages, setMessages] = useState<Message[]>(interview?.messages || []);
 	const [currentCheckpoint, setCurrentCheckpoint] = useState(interview?.currentCheckpoint || 1);
+	const [currentAgentId, setCurrentAgentId] = useState(agents[0].agent_id);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
-	// Add dynamic variables state
-	const [dynamicVariables] = useState<DynamicVariables>({
-		user_name: 'Robert',
-		job: 'Software Engineer',
-	});
-
-	// Update messages when loader data changes
+	// Effect to handle action data updates
 	useEffect(() => {
-		if (interview?.messages) {
-			setMessages(interview.messages);
+		if (actionData?.success && actionData.selectedAgentId) {
+			// Restart conversation with new agent
+			if (conversation.status === 'connected') {
+				conversation
+					.endSession()
+					.then(() => {
+						handleStartSession();
+					})
+					.catch(err => {
+						console.error('Failed to switch agent:', err);
+						setError('Failed to switch agent');
+					});
+			}
 		}
-	}, [interview?.messages]);
-
-	// Update checkpoint when loader data changes
-	useEffect(() => {
-		if (interview?.currentCheckpoint) {
-			setCurrentCheckpoint(interview.currentCheckpoint);
-		}
-	}, [interview?.currentCheckpoint]);
-
-	const scrollToBottom = () => {
-		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-	};
-
-	useEffect(() => {
-		scrollToBottom();
-	}, [messages]);
+	}, [actionData]);
 
 	const saveMessage = async (message: Message) => {
 		const formData = new FormData();
@@ -444,8 +412,11 @@ export default function AgentRoute() {
 	};
 
 	const conversation = useConversation({
-		signedUrl,
-		dynamicVariables,
+		agentId: currentAgentId,
+		dynamicVariables: {
+			user_name: 'Robert',
+			job: 'Software Engineer',
+		},
 		options: {
 			keepAlive: true,
 			reconnect: true,
@@ -454,8 +425,8 @@ export default function AgentRoute() {
 		},
 		initialContext: {
 			context: {
-				user_name: dynamicVariables.user_name,
-				job: dynamicVariables.job,
+				user_name: 'Robert',
+				job: 'Software Engineer',
 				checkpoints: CHECKPOINTS.map(checkpoint => ({
 					id: checkpoint.id,
 					title: checkpoint.title,
@@ -514,8 +485,8 @@ export default function AgentRoute() {
 			setError(null);
 			await conversation.startSession({
 				context: {
-					user_name: dynamicVariables.user_name,
-					job: dynamicVariables.job,
+					user_name: 'Robert',
+					job: 'Software Engineer',
 				},
 			});
 		} catch (err) {
@@ -545,6 +516,13 @@ export default function AgentRoute() {
 			console.error('Failed to end session:', err);
 			setError('Failed to end conversation');
 		}
+	};
+
+	const handleAgentChange = async (newAgentId: string) => {
+		if (conversation.status === 'connected') {
+			return null;
+		}
+		setCurrentAgentId(newAgentId);
 	};
 
 	return (
@@ -633,6 +611,52 @@ export default function AgentRoute() {
 									)}
 								</div>
 							</div>
+
+							{/* Agent Selection and Control Buttons */}
+							<div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 w-full max-w-md">
+								{!isConnected && (
+									<select
+										value={currentAgentId}
+										onChange={e => handleAgentChange(e.target.value)}
+										disabled={isConnected}
+										className="w-full px-4 py-2 rounded-lg border border-brand-primary bg-white text-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/50 disabled:opacity-50"
+									>
+										{agents.map(agent => (
+											<option key={agent.agent_id} value={agent.agent_id}>
+												{agent.name}
+											</option>
+										))}
+									</select>
+								)}
+
+								{!isConnected ? (
+									<button
+										onClick={handleStartSession}
+										disabled={isConnecting || navigation.state === 'submitting'}
+										className={cn(
+											'w-full flex gap-2 items-center justify-center py-2 px-4 rounded-lg text-white',
+											isConnecting || navigation.state === 'submitting'
+												? 'bg-brand-secondary cursor-not-allowed'
+												: 'bg-brand-primary hover:bg-brand-secondary',
+										)}
+									>
+										<Play className="w-4 h-4" />
+										{isConnecting
+											? 'Connecting...'
+											: navigation.state === 'submitting'
+												? 'Switching Agent...'
+												: 'Start Interview'}
+									</button>
+								) : (
+									<button
+										onClick={handleEndSession}
+										className="w-full bg-red-500 hover:bg-red-700 text-white flex gap-2 items-center justify-center py-2 px-4 rounded-lg"
+									>
+										<X className="w-4 h-4" />
+										End Interview
+									</button>
+								)}
+							</div>
 						</div>
 					</Card>
 				</div>
@@ -679,31 +703,6 @@ export default function AgentRoute() {
 					<div className="mb-4 space-y-2">
 						{error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">{error}</div>}
 					</div>
-				</div>
-
-				{/* Control buttons */}
-				<div className="max-w-2xl mx-auto w-full flex gap-4">
-					{!isConnected ? (
-						<button
-							onClick={handleStartSession}
-							disabled={isConnecting}
-							className={cn(
-								'w-full flex gap-2 items-center justify-center py-2 px-4 rounded-lg text-white',
-								isConnecting ? 'bg-brand-secondary cursor-not-allowed' : 'bg-brand-primary hover:bg-brand-secondary',
-							)}
-						>
-							<Play className="w-4 h-4" />
-							{isConnecting ? 'Connecting...' : 'Start Interview'}
-						</button>
-					) : (
-						<button
-							onClick={handleEndSession}
-							className="w-full bg-red-500 hover:bg-red-700 text-white flex gap-2 items-center justify-center py-2 px-4 rounded-lg"
-						>
-							<X className="w-4 h-4" />
-							End Interview
-						</button>
-					)}
 				</div>
 			</div>
 
