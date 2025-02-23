@@ -8,6 +8,7 @@ import {
 	LineChart,
 	Mic,
 	Sparkles,
+	Star,
 	Users,
 	Zap,
 } from 'lucide-react';
@@ -16,7 +17,35 @@ import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Card } from '~/components/ui/card';
 
+interface Testimonial {
+	name: string;
+	role: string;
+	image: string;
+	quote: string;
+}
+
 export default function LandingPage() {
+	const testimonials: Testimonial[] = [
+		{
+			name: 'Sarah Chen',
+			role: 'Head of Talent, TechCorp',
+			image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=200&h=200&fit=crop',
+			quote: 'TalentBud has cut our hiring time in half. The AI scheduling and screening are game-changers for our recruitment process.',
+		},
+		{
+			name: 'Marcus Rodriguez',
+			role: 'HR Director, InnovateCo',
+			image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&h=200&fit=crop',
+			quote: 'The voice-based screening saved us countless hours. We can now focus on meaningful interactions with top candidates.',
+		},
+		{
+			name: 'Emily Watson',
+			role: 'Recruiting Manager, StartupX',
+			image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&h=200&fit=crop',
+			quote: 'The analytics dashboard gives us incredible insights. We\'ve improved our hiring success rate by 40% since using TalentBud.',
+		},
+	];
+
 	return (
 		<div className="flex flex-col min-h-screen bg-white">
 			{/* Header */}
@@ -234,6 +263,59 @@ export default function LandingPage() {
 								)}
 								<div className="absolute inset-0 bg-gradient-to-r from-[#4A90E2]/10 to-[#7FB3FF]/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
 							</div>
+						))}
+					</div>
+				</div>
+			</section>
+
+			{/* Testimonials Section */}
+			<section className="py-32 bg-gradient-to-b from-white to-slate-50 relative overflow-hidden">
+				<div className="absolute inset-0 bg-grid-slate-200/60 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
+				<div className="container relative">
+					<div className="text-center mb-20">
+						<Badge variant="secondary" className="bg-white shadow-lg shadow-blue-100 px-6 py-2 rounded-full mb-6">
+							<Star className="h-4 w-4 text-[#FFD166] mr-2" />
+							<span className="text-slate-800">Success Stories</span>
+						</Badge>
+						<h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+							What Our Clients Say
+						</h2>
+						<p className="text-slate-600 max-w-2xl mx-auto text-lg">
+							Join hundreds of companies that have transformed their hiring process with TalentBud
+						</p>
+					</div>
+
+					<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+						{testimonials.map((testimonial, index) => (
+							<Card
+								key={index}
+								className="p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur-sm border-slate-200/60"
+							>
+								<div className="flex items-center gap-4 mb-6">
+									<div className="relative w-14 h-14 rounded-full overflow-hidden bg-gradient-to-r from-[#4A90E2] to-[#7FB3FF]">
+										<img
+											src={testimonial.image}
+											alt={testimonial.name}
+											className="w-full h-full object-cover"
+										/>
+									</div>
+									<div>
+										<h4 className="font-semibold text-slate-800">{testimonial.name}</h4>
+										<p className="text-sm text-slate-600">{testimonial.role}</p>
+									</div>
+								</div>
+								<blockquote className="text-slate-600 leading-relaxed italic">
+									"{testimonial.quote}"
+								</blockquote>
+								<div className="flex gap-1 mt-6">
+									{Array.from({ length: 5 }).map((_, i) => (
+										<Star
+											key={i}
+											className="h-5 w-5 fill-[#FFD166] text-[#FFD166]"
+										/>
+									))}
+								</div>
+							</Card>
 						))}
 					</div>
 				</div>
