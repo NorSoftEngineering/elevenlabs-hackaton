@@ -1,15 +1,15 @@
-import { useLoaderData, Form, useSubmit, useNavigation, redirect } from 'react-router';
+import { Form, redirect, useLoaderData, useNavigation, useSubmit } from 'react-router';
 
-import { createSupabaseServer } from '~/utils/supabase.server';
-import { getEnv } from '~/utils/env.server';
 import { useConversation } from '@11labs/react';
-import { useState, useRef, useEffect } from 'react';
-import { Circle, CheckCircle2, Send, Pause, Play, X } from 'lucide-react';
-import { cn } from '~/lib/utils';
-import { Card } from '~/components/ui/card';
-import { LottieAvatar } from '~/components/LottieAvatar';
+import { CheckCircle2, Circle, Pause, Play, Send, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import { LottieAvatar } from '~/components/LottieAvatar';
+import { Card } from '~/components/ui/card';
+import { cn } from '~/lib/utils';
+import { getEnv } from '~/utils/env.server';
 import { analyzeCheckpointCompletion } from '~/utils/openai.server';
+import { createSupabaseServer } from '~/utils/supabase.server';
 
 // Message types
 type MessageSource = 'user' | 'assistant';

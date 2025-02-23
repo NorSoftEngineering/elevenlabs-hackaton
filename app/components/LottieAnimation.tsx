@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { useLottie } from 'lottie-react';
+import { useEffect, useState } from 'react';
 
 interface LottieAnimationProps {
 	isSpeaking: boolean;
