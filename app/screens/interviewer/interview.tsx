@@ -45,8 +45,20 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		throw new Error('No organization found');
 	}
 
+  const { data: interview, error } = await supabase
+    .from('interviews')
+    .select('*')
+    .eq('id', params.id)
+    .eq('organization_id', orgMember.organization_id)
+    .single();
+
+	if (error || !interview) {
+		console.error(error);
+		throw new Error('Interview not found');
+	}
+
 	// Get the interview with all relations
-	const { data: interview, error } = await supabase
+	const { data: interviewDetails, error: interviewDetailsError } = await supabase
 		.from('interviews')
 		.select(`
       *,
@@ -63,15 +75,15 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 		.eq('organization_id', orgMember.organization_id)
 		.single();
 
-	if (error || !interview) {
-		console.error(error);
-		throw new Error('Interview not found');
+	if (!interviewDetails) {
+		return { interview, role: orgMember.role };
 	}
 
 	// Transform the data to match our types
 	const transformedInterview = {
 		...interview,
-		candidates: interview.candidates.map((c: any) => ({
+    ...interviewDetails,
+		candidates: interviewDetails.candidates.map((c: any) => ({
 			id: c.interview_candidate_id,
 			interview_id: c.interview_id,
 			candidate_id: c.candidate_id,
