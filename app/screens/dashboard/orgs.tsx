@@ -140,9 +140,7 @@ export default function OrganizationsPage() {
 												<td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
 													{org.name}
 												</td>
-												<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-													{org.member_count}
-												</td>
+												<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{org.member_count}</td>
 												<td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
 													{org.user_role.charAt(0).toUpperCase() + org.user_role.slice(1)}
 												</td>
@@ -188,4 +186,4 @@ export default function OrganizationsPage() {
 			</div>
 		</RoleGuard>
 	);
-} 
+}
