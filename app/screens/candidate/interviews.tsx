@@ -1,8 +1,8 @@
 import { Link } from 'react-router';
-import { type ActionFunctionArgs, type LoaderFunctionArgs, Form, useLoaderData, useNavigation } from 'react-router';
+import { type ActionFunctionArgs, Form, type LoaderFunctionArgs, useLoaderData, useNavigation } from 'react-router';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
-import { createSupabaseServer } from '~/utils/supabase.server';
 import { type InterviewWithRelations } from '~/types';
+import { createSupabaseServer } from '~/utils/supabase.server';
 
 export { ErrorBoundary };
 
@@ -33,9 +33,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	}
 
 	// Get accepted interviews
-	const { data: acceptedInterviews, error: acceptedError } = await supabase
-		.from('candidate_interviews')
-		.select('*');
+	const { data: acceptedInterviews, error: acceptedError } = await supabase.from('candidate_interviews').select('*');
 
 	if (acceptedError) {
 		throw new Error('Failed to load accepted interviews');
@@ -95,7 +93,7 @@ export async function action({ request }: ActionFunctionArgs) {
 			// Start a transaction by using .rpc()
 			const { error: acceptError } = await supabase.rpc('accept_interview_invitation', {
 				p_invitation_id: invitationId,
-				p_candidate_id: session.user.id
+				p_candidate_id: session.user.id,
 			});
 
 			if (acceptError) throw new Error('Failed to accept invitation');
@@ -163,9 +161,7 @@ export default function InterviewsScreen() {
 									<div className="flex justify-between items-start">
 										<div>
 											<h3 className="text-lg font-medium text-gray-900">{invitation.interview_name}</h3>
-											<p className="text-sm text-gray-600 mt-1">
-												{invitation.organization_name}
-											</p>
+											<p className="text-sm text-gray-600 mt-1">{invitation.organization_name}</p>
 											{invitation.interview_description && (
 												<p className="text-sm text-gray-600 mt-2">{invitation.interview_description}</p>
 											)}
@@ -216,9 +212,7 @@ export default function InterviewsScreen() {
 									<div className="flex justify-between items-start">
 										<div>
 											<h3 className="text-lg font-medium text-gray-900">{accepted.interview_name}</h3>
-											<p className="text-sm text-gray-600 mt-1">
-												{accepted.organization_name}
-											</p>
+											<p className="text-sm text-gray-600 mt-1">{accepted.organization_name}</p>
 											{accepted.interview_description && (
 												<p className="text-sm text-gray-600 mt-2">{accepted.interview_description}</p>
 											)}
@@ -253,9 +247,7 @@ export default function InterviewsScreen() {
 									<div className="flex justify-between items-start">
 										<div>
 											<h3 className="text-lg font-medium text-gray-900">{invitation.interview_name}</h3>
-											<p className="text-sm text-gray-600 mt-1">
-												{invitation.organization_name}
-											</p>
+											<p className="text-sm text-gray-600 mt-1">{invitation.organization_name}</p>
 											{invitation.interview_description && (
 												<p className="text-sm text-gray-600 mt-2">{invitation.interview_description}</p>
 											)}
@@ -265,7 +257,9 @@ export default function InterviewsScreen() {
 													<p>Scheduled for: {new Date(invitation.interview_start_at).toLocaleString()}</p>
 												)}
 											</div>
-											<p className="text-sm text-red-600 mt-2">Declined on {new Date(invitation.responded_at!).toLocaleDateString()}</p>
+											<p className="text-sm text-red-600 mt-2">
+												Declined on {new Date(invitation.responded_at!).toLocaleDateString()}
+											</p>
 										</div>
 									</div>
 								</div>
