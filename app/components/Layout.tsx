@@ -21,7 +21,7 @@ export default function Layout({ children, context }: LayoutProps) {
 			) : (
 				<>
 					<Navigation context={context} />
-					<main className="mx-auto py-6 sm:px-6 lg:px-8 pt-16">{children}</main>
+					<main className="mx-auto py-6 sm:px-6 lg:px-8 pt-20">{children}</main>
 				</>
 			)}
 		</div>
