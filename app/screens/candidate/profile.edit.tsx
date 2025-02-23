@@ -97,6 +97,9 @@ export async function action({ request }: ActionFunctionArgs) {
 			try {
 				const res = await fetch(`https://hook.eu2.make.com/fym5x7z7tbtwd6i5ibgtw1zqm8imb2ji`, {
 					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
 					body: JSON.stringify({
 						id_candidate: session.user.id,
 						email: session.user.email,
