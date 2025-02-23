@@ -90,26 +90,26 @@ export async function action({ request }: ActionFunctionArgs) {
 				filename: resumeFile.name,
 			};
 
-      try {
-        const res = await fetch(`https://hook.eu2.make.com/fym5x7z7tbtwd6i5ibgtw1zqm8imb2ji`, {
-          method: 'POST',
-          body: JSON.stringify({
-            id_candidate: session.user.id,
-            email: session.user.email,
-            name: formData.get('name'),
-            title: formData.get('title'),
-            location: formData.get('location'),
-            resume_url: resumeData.url,
-            resume_filename: resumeData.filename,
-            experience_years: formData.get('experience_years'),
-            skills: formData.get('skills'),
-            bio: formData.get('bio'),
-          }),
-        })
+			try {
+				const res = await fetch(`https://hook.eu2.make.com/fym5x7z7tbtwd6i5ibgtw1zqm8imb2ji`, {
+					method: 'POST',
+					body: JSON.stringify({
+						id_candidate: session.user.id,
+						email: session.user.email,
+						name: formData.get('name'),
+						title: formData.get('title'),
+						location: formData.get('location'),
+						resume_url: resumeData.url,
+						resume_filename: resumeData.filename,
+						experience_years: formData.get('experience_years'),
+						skills: formData.get('skills'),
+						bio: formData.get('bio'),
+					}),
+				});
 
-        if (!res.ok) {
-          throw new Error('Failed to send profile to Make');
-        }
+				if (!res.ok) {
+					throw new Error('Failed to send profile to Make');
+				}
 			} catch (error) {
 				console.error('Failed to handle resume upload', error);
 				return { error: 'Failed to upload resume', success: false } as const;
