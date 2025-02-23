@@ -15,9 +15,9 @@ type LayoutProps = {
 export default function Layout({ children, context }: LayoutProps) {
 	const location = useLocation();
 	return (
-		<div className="min-h-screen bg-gray-50 flex justify-center items-center">
+		<div className="min-h-screen bg-gray-50">
 			{location.pathname === '/' ? (
-				<div className="px-5 pt-16">{children}</div>
+				<div className="px-5 pt-16 flex justify-center items-center">{children}</div>
 			) : (
 				<>
 					<Navigation context={context} />

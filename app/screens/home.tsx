@@ -1,3 +1,4 @@
+import { Dialog, Transition } from '@headlessui/react';
 import { motion } from 'framer-motion';
 import {
 	ArrowRight,
@@ -11,15 +12,14 @@ import {
 	Sparkles,
 	Star,
 	Users,
-	Zap,
 	X,
+	Zap,
 } from 'lucide-react';
+import { Fragment, useState } from 'react';
 import { Link } from 'react-router';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Card } from '~/components/ui/card';
-import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, useState } from 'react';
 
 interface VideoModalProps {
 	isOpen: boolean;
@@ -459,7 +459,8 @@ export default function LandingPage() {
 								Transforms Hiring
 							</h2>
 							<p className="text-lg text-slate-600 mb-8">
-								Get a firsthand look at our AI-powered platform. See how TalentBud streamlines your recruitment process from start to finish.
+								Get a firsthand look at our AI-powered platform. See how TalentBud streamlines your recruitment process
+								from start to finish.
 							</p>
 							<Button
 								size="lg"
