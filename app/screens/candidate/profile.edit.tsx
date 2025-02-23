@@ -82,11 +82,17 @@ export async function action({ request }: ActionFunctionArgs) {
 
 			// Get the public URL
 			const {
-				data: { publicUrl },
-			} = supabase.storage.from('resumes').getPublicUrl(fileName);
+				data,
+			} = await supabase.storage.from('resumes').createSignedUrl(fileName, 60 * 60 * 24 * 30); // 30 days
+
+			if (!data) {
+				throw new Error('Failed to get signed URL');
+			}
+
+			const { signedUrl } = data;
 
 			resumeData = {
-				url: publicUrl,
+				url: signedUrl,
 				filename: resumeFile.name,
 			};
 
