@@ -153,7 +153,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
-				interviewerId: params.id,
+				interviewId: params.id,
 				invitations: createdInvitations,
 				invited_by: session.user.id,
 				organization_id: orgMember.organization_id,
