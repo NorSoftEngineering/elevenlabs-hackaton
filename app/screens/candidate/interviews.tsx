@@ -1,20 +1,20 @@
+import React from 'react';
 import { Link } from 'react-router';
 import {
 	type ActionFunctionArgs,
 	Form,
 	type LoaderFunctionArgs,
+	useActionData,
 	useFetcher,
 	useLoaderData,
 	useNavigation,
 	useSubmit,
-	useActionData,
 } from 'react-router';
+import { toast } from 'sonner';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { InterviewSchedule } from '~/components/InterviewSchedule';
 import { type InterviewWithRelations } from '~/types';
 import { createSupabaseServer } from '~/utils/supabase.server';
-import { toast } from "sonner"
-import React from 'react';
 
 export { ErrorBoundary };
 
@@ -220,16 +220,16 @@ export default function InterviewsScreen() {
 		if (actionData?.success) {
 			switch (actionData.action) {
 				case 'accept':
-					toast.success("You have accepted the interview invitation");
+					toast.success('You have accepted the interview invitation');
 					break;
 				case 'decline':
-					toast.success("You have declined the interview invitation");
+					toast.success('You have declined the interview invitation');
 					break;
 				case 'schedule':
-					toast.success("Interview has been scheduled");
+					toast.success('Interview has been scheduled');
 					break;
 				case 'reschedule':
-					toast.success("Interview has been rescheduled");
+					toast.success('Interview has been rescheduled');
 					break;
 			}
 		} else if (actionData?.error) {
@@ -243,7 +243,7 @@ export default function InterviewsScreen() {
 		if (data?.success) {
 			switch (data.action) {
 				case 'reschedule':
-					toast.success("Interview has been rescheduled");
+					toast.success('Interview has been rescheduled');
 					break;
 			}
 		} else if (data?.error) {

@@ -5,10 +5,10 @@ import Navbar from '~/components/Navbar';
 import { getSupabaseEnv } from '~/utils/env.server';
 import { createSupabaseServer } from '~/utils/supabase.server';
 import Layout from './components/Layout';
+import { Toaster } from './components/ui/sonner';
 import { OrganizationProvider } from './contexts/OrganizationContext';
 import { RoleProvider } from './contexts/RoleContext';
 import { AppLayout } from './layouts/AppLayout';
-import { Toaster } from './components/ui/sonner';
 
 import globalStyles from './styles/globals.css?url';
 import styles from './tailwind.css?url';

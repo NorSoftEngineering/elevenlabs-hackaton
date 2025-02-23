@@ -5,17 +5,17 @@ import {
 	Form,
 	type LoaderFunctionArgs,
 	redirect,
+	useActionData,
 	useLoaderData,
+	useNavigate,
 	useNavigation,
 	useSubmit,
-	useActionData,
-	useNavigate,
 } from 'react-router';
+import { toast } from 'sonner';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { InterviewSchedule } from '~/components/InterviewSchedule';
 import { type InterviewWithRelations } from '~/types';
 import { createSupabaseServer } from '~/utils/supabase.server';
-import { toast } from "sonner"
 
 export { ErrorBoundary };
 
@@ -398,14 +398,14 @@ export default function InterviewScreen() {
 		if (actionData?.success) {
 			switch (actionData.action) {
 				case 'update_status':
-					toast.success("Interview status has been updated");
+					toast.success('Interview status has been updated');
 					break;
 				case 'delete':
-					toast.success("Interview has been deleted");
+					toast.success('Interview has been deleted');
 					navigate('/dashboard/interviews');
 					break;
 				case 'schedule':
-					toast.success("Interview has been scheduled");
+					toast.success('Interview has been scheduled');
 					break;
 			}
 		} else if (actionData?.error) {

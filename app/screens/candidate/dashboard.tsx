@@ -2,10 +2,10 @@ import { createBrowserClient } from '@supabase/ssr';
 import { useEffect, useState } from 'react';
 import { useLoaderData } from 'react-router';
 import { Link } from 'react-router';
+import { toast } from 'sonner';
 import RoleGuard from '~/components/RoleGuard';
 import type { CandidateProfile, Interview } from '~/types/candidate';
 import { getSupabaseEnv } from '~/utils/env.server';
-import { toast } from "sonner"
 
 export const loader = async () => {
 	return {
@@ -37,7 +37,7 @@ export default function CandidateDashboard() {
 					.limit(5);
 
 				if (interviewError) {
-					toast.error("Failed to load upcoming interviews");
+					toast.error('Failed to load upcoming interviews');
 					throw interviewError;
 				}
 
@@ -51,7 +51,7 @@ export default function CandidateDashboard() {
 					.single();
 
 				if (profileError) {
-					toast.error("Failed to load profile data");
+					toast.error('Failed to load profile data');
 					throw profileError;
 				}
 
@@ -59,11 +59,10 @@ export default function CandidateDashboard() {
 				const completedFields = fields.filter(field => profile && profile[field]);
 				const newCompletion = (completedFields.length / fields.length) * 100;
 				setProfileCompletion(newCompletion);
-
 			} catch (err) {
 				console.error('Error loading dashboard data:', err);
 				setError('Failed to load dashboard data');
-				toast.error("Failed to load dashboard data");
+				toast.error('Failed to load dashboard data');
 			} finally {
 				setIsLoading(false);
 			}

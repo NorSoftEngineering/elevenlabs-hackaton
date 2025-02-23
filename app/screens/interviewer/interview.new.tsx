@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router';
 import {
 	type ActionFunctionArgs,
@@ -6,14 +7,13 @@ import {
 	redirect,
 	useActionData,
 	useLoaderData,
-	useNavigation,
 	useNavigate,
+	useNavigation,
 } from 'react-router';
+import { toast } from 'sonner';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { type Interview } from '~/types';
 import { createSupabaseServer } from '~/utils/supabase.server';
-import { toast } from "sonner"
-import React from 'react';
 
 export { ErrorBoundary };
 
@@ -133,7 +133,7 @@ export default function InterviewNewScreen() {
 
 	React.useEffect(() => {
 		if (actionData?.success) {
-			toast.success("Interview has been created");
+			toast.success('Interview has been created');
 			navigate('/dashboard/interviews');
 		} else if (actionData?.error) {
 			toast.error(actionData.error);
