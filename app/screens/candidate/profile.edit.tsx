@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
+import React from 'react';
 import { type ActionFunctionArgs, type LoaderFunctionArgs, redirect } from 'react-router';
 import { Form, useActionData, useLoaderData, useNavigation } from 'react-router';
+import { toast } from 'sonner';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { createSupabaseServer } from '~/utils/supabase.server';
-import { toast } from "sonner"
-import React from 'react';
 
 export { ErrorBoundary };
 
@@ -302,7 +302,7 @@ export default function ProfileEditScreen() {
 
 	React.useEffect(() => {
 		if (actionData?.success) {
-			toast.success("Profile has been updated");
+			toast.success('Profile has been updated');
 		} else if (actionData?.error) {
 			toast.error(actionData.error);
 		}

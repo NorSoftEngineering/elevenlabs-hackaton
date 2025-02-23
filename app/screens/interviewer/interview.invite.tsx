@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router';
 import {
 	type ActionFunctionArgs,
@@ -6,14 +7,13 @@ import {
 	redirect,
 	useActionData,
 	useLoaderData,
-	useNavigation,
 	useNavigate,
+	useNavigation,
 } from 'react-router';
+import { toast } from 'sonner';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
 import { type InterviewWithRelations } from '~/types';
 import { createSupabaseServer } from '~/utils/supabase.server';
-import { toast } from "sonner"
-import React from 'react';
 
 export { ErrorBoundary };
 
@@ -153,7 +153,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
-				interviewerId: params.id,
+				interviewId: params.id,
 				invitations: createdInvitations,
 				invited_by: session.user.id,
 				organization_id: orgMember.organization_id,
