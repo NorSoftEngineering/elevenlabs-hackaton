@@ -2,14 +2,14 @@ import { Form, redirect, useActionData, useLoaderData, useNavigation, useSubmit 
 
 import { useConversation } from '@11labs/react';
 import { CheckCircle2, Circle, Mic, Pause, Play, Send, Volume2, X } from 'lucide-react';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import { Countdown } from '~/components/Countdown';
 import { LottieAvatar } from '~/components/LottieAvatar';
 import { Card } from '~/components/ui/card';
 import { cn } from '~/lib/utils';
 import { analyzeCheckpointCompletion } from '~/utils/openai.server';
 import { createSupabaseServer } from '~/utils/supabase.server';
-import { Countdown } from '~/components/Countdown';
 
 // Message types
 type MessageSource = 'user' | 'assistant';
@@ -69,20 +69,6 @@ type Interview = {
 		analysis?: CheckpointAnalysis;
 	}[];
 	name: string;
-};
-
-type InterviewData = {
-	id: string;
-	status: string;
-	interview_checkpoints: {
-		id: string;
-		checkpoint_id: number;
-		completed_at: string | null;
-		analysis?: CheckpointAnalysis;
-	}[];
-	messages: DBMessage[];
-	started_date: string;
-	deadline: string | null;
 };
 
 const CHECKPOINTS = [
