@@ -531,8 +531,8 @@ export default function AgentRoute() {
 			{/* Main chat area */}
 			<div className="flex-1 flex flex-col p-6 md:pr-[20rem] relative">
 				{/* Sticky Avatar Card */}
-				<div className="sticky top-0 z-10 bg-white pb-6">
-					<Card className="bg-gradient-to-br from-[#FFE5A3]/20 to-[#FFD166]/20 backdrop-blur-sm border-none shadow-lg p-6 relative overflow-hidden">
+				<div className="sticky top-16 z-10 bg-white pb-6">
+					<Card className="bg-gradient-to-br from-[#FFE5A3]/20 to-[#FFD166]/20 backdrop-blur-sm border-none shadow-lg p-6 relative overflow-hidden rounded-none">
 						<div className="absolute inset-0">
 							<div className="absolute inset-0 bg-gradient-to-r from-[#FFE5A3] to-[#FFD166] opacity-10" />
 							{/* Friendly background elements */}
