@@ -1,4 +1,4 @@
-import { Form, redirect, useLoaderData, useNavigation, useSubmit, useActionData } from 'react-router';
+import { Form, redirect, useActionData, useLoaderData, useNavigation, useSubmit } from 'react-router';
 
 import { useConversation } from '@11labs/react';
 import { CheckCircle2, Circle, Mic, Pause, Play, Send, Volume2, X } from 'lucide-react';
@@ -360,7 +360,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function AgentRoute() {
 	const { interview, agents } = useLoaderData<LoaderData>();
-	const actionData = useActionData<typeof action>();
 	const submit = useSubmit();
 	const navigation = useNavigation();
 	const [error, setError] = useState<string | null>(null);
@@ -369,23 +368,25 @@ export default function AgentRoute() {
 	const [currentAgentId, setCurrentAgentId] = useState(agents[0].agent_id);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
-	// Effect to handle action data updates
 	useEffect(() => {
-		if (actionData?.success && actionData.selectedAgentId) {
-			// Restart conversation with new agent
-			if (conversation.status === 'connected') {
-				conversation
-					.endSession()
-					.then(() => {
-						handleStartSession();
-					})
-					.catch(err => {
-						console.error('Failed to switch agent:', err);
-						setError('Failed to switch agent');
-					});
-			}
+		if (interview?.messages) {
+			setMessages(interview.messages);
 		}
-	}, [actionData]);
+	}, [interview?.messages]);
+
+	useEffect(() => {
+		if (interview?.currentCheckpoint) {
+			setCurrentCheckpoint(interview.currentCheckpoint);
+		}
+	}, [interview?.currentCheckpoint]);
+
+	const scrollToBottom = () => {
+		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+	};
+
+	useEffect(() => {
+		scrollToBottom();
+	}, [messages]);
 
 	const saveMessage = async (message: Message) => {
 		const formData = new FormData();
