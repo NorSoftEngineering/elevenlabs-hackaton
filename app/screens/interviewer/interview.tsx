@@ -9,6 +9,7 @@ import {
 	useSubmit,
 } from 'react-router';
 import { ErrorBoundary } from '~/components/ErrorBoundary';
+import { InterviewSchedule } from '~/components/InterviewSchedule';
 import { type InterviewWithRelations } from '~/types';
 import { createSupabaseServer } from '~/utils/supabase.server';
 
@@ -121,6 +122,23 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
 			if (error) throw new Error('Failed to delete interview');
 			return redirect('/dashboard/interviews');
+		}
+
+		case 'schedule': {
+			const date = formData.get('date')?.toString();
+			const time = formData.get('time')?.toString();
+			if (!date || !time) throw new Error('Date and time are required');
+
+			const startAt = new Date(`${date}T${time}`).toISOString();
+
+			const { error } = await supabase
+				.from('interviews')
+				.update({ start_at: startAt, status: 'scheduled' })
+				.eq('id', params.id)
+				.eq('organization_id', orgMember.organization_id);
+
+			if (error) throw new Error('Failed to schedule interview');
+			break;
 		}
 
 		default:
@@ -378,6 +396,15 @@ export default function InterviewScreen() {
 		submit(formData, { method: 'post' });
 	};
 
+	const handleSchedule = (dateTime: string) => {
+		const [date, time] = dateTime.split('T');
+		const formData = new FormData();
+		formData.set('action', 'schedule');
+		formData.set('date', date);
+		formData.set('time', time);
+		submit(formData, { method: 'post' });
+	};
+
 	return (
 		<div className="p-6 max-w-6xl mx-auto">
 			<div className="flex justify-between items-center mb-6">
@@ -413,16 +440,11 @@ export default function InterviewScreen() {
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
 							<section className="mb-6">
-								<h2 className="text-lg font-semibold text-gray-700 mb-3">Interview Details</h2>
-								<div className="space-y-2">
-									<p className="text-gray-700">
-										<span className="text-gray-600">Date:</span>{' '}
-										{interview.start_at ? new Date(interview.start_at).toLocaleString() : 'Not scheduled'}
-									</p>
-									<p className="text-gray-700">
-										<span className="text-gray-600">Duration:</span> {interview.duration}
-									</p>
-								</div>
+								<InterviewSchedule 
+									interview={interview} 
+									canEdit={canManage} 
+									onSchedule={handleSchedule} 
+								/>
 							</section>
 
 							<section className="mb-6">
