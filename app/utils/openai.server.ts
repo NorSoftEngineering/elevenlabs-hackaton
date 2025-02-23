@@ -4,14 +4,25 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
 type Message = {
 	id: string;
 	text: string;
-	source: 'user' | 'assistant';
+	source: string;
 	timestamp: number;
 };
 
 type AnalysisResult = {
-	covered_topics: string[];
-	summary: string;
-	follow_up_questions: string[];
+	checkpointCompleted: boolean;
+	score: number;
+	feedback: {
+		covered: string[];
+		missing: string[];
+		suggestions: string[];
+	};
+	confidence: number;
+};
+
+type Checkpoint = {
+	id: number;
+	title: string;
+	description: string;
 };
 
 const openai = new OpenAI({
@@ -27,44 +38,78 @@ function mapSourceToRole(source: string): 'user' | 'assistant' {
 	return 'assistant';
 }
 
+// Simplified checkpoint criteria
+const CHECKPOINT_CRITERIA = {
+	1: {
+		// Project Experience
+		minScore: 0.6,
+		keyAreas: ['Project description and purpose', 'Technologies used', 'Personal contribution'],
+	},
+	2: {
+		// Frontend Core
+		minScore: 0.6,
+		keyAreas: ['JavaScript knowledge', 'Frontend fundamentals', 'Problem-solving approach'],
+	},
+	3: {
+		// Frontend Frameworks
+		minScore: 0.6,
+		keyAreas: ['React experience', 'State and data flow', 'UI/UX implementation'],
+	},
+	4: {
+		// Backend & Architecture
+		minScore: 0.6,
+		keyAreas: ['Backend development', 'Database knowledge', 'System architecture'],
+	},
+	5: {
+		// Testing & DevOps
+		minScore: 0.6,
+		keyAreas: ['Testing approach', 'Deployment process', 'Quality assurance'],
+	},
+};
+
 export async function analyzeCheckpointCompletion(
 	messages: Message[],
-	topics: string[],
-	requiredTopics: number,
+	options: {
+		checkpointId: number;
+		checkpoint: Checkpoint;
+	},
 ): Promise<AnalysisResult> {
-	// Convert messages to a structured conversation format with valid OpenAI roles
 	const conversation: ChatCompletionMessageParam[] = messages.map(msg => ({
 		role: mapSourceToRole(msg.source),
 		content: msg.text,
 	}));
 
-	// Filter out any empty or invalid messages
 	const validConversation = conversation.filter(
 		msg => msg.content && typeof msg.content === 'string' && msg.content.trim().length > 0,
 	);
 
 	console.log('Processed conversation for analysis:', validConversation);
 
+	const criteria = CHECKPOINT_CRITERIA[options.checkpointId as keyof typeof CHECKPOINT_CRITERIA];
+
 	const systemPrompt = `You are analyzing a technical interview conversation.
-Your task is to track which topics have been meaningfully discussed.
+Your task is to evaluate the candidate's responses for the current checkpoint.
 
-Topics to track: ${topics.join(', ')}
-Required topics to cover: ${requiredTopics}
+Current Checkpoint: ${options.checkpoint.title}
+Description: ${options.checkpoint.description}
 
-A topic is considered covered if:
-1. The candidate has provided a clear response about it
-2. There was meaningful discussion (not just a mention)
-3. The candidate showed practical understanding
+Key Areas to Evaluate:
+${criteria.keyAreas.map(area => `- ${area}`).join('\n')}
 
-Your job is to:
-1. Track which topics were covered in the conversation
-2. Provide a brief summary of what was discussed
-3. Suggest follow-up questions for uncovered topics
+For each key area, consider:
+1. Did the candidate address this area?
+2. Did they show practical understanding?
+3. Was the discussion meaningful and detailed?
 
-Please focus on:
-- Identifying clear topic coverage
-- Tracking conversation progress
-- Noting areas that need more discussion`;
+Score the conversation from 0 to 1:
+0.0-0.3: Minimal/No discussion
+0.4-0.6: Basic discussion
+0.7-1.0: Thorough discussion
+
+A checkpoint is considered completed if:
+1. The overall discussion score is >= ${criteria.minScore}
+2. The candidate showed practical understanding
+3. The responses were clear and detailed`;
 
 	try {
 		const response = await openai.chat.completions.create({
@@ -77,16 +122,18 @@ Please focus on:
 				...validConversation,
 				{
 					role: 'system',
-					content: `Please analyze the conversation and provide:
-1. Which topics were meaningfully covered
-2. Brief summary of the discussion
-3. Suggested follow-up questions for uncovered topics
+					content: `Analyze the conversation and provide a simple evaluation.
 
 Format your response as a JSON object with:
 {
-  "covered_topics": string[],
-  "summary": string,
-  "follow_up_questions": string[]
+  "checkpointCompleted": boolean,
+  "score": number,
+  "feedback": {
+    "covered": string[],
+    "missing": string[],
+    "suggestions": string[]
+  },
+  "confidence": number
 }`,
 				},
 			],
@@ -101,18 +148,14 @@ Format your response as a JSON object with:
 
 		const result = JSON.parse(response.choices[0].message.content) as AnalysisResult;
 
-		console.log('Raw OpenAI response:', response.choices[0].message.content);
-		console.log('Parsed result:', result);
+		console.log('Checkpoint analysis result:', result);
 
-		// Validate and clean up the result
-		const validatedResult = {
-			covered_topics: Array.isArray(result.covered_topics) ? result.covered_topics : [],
-			summary: result.summary || 'No summary provided',
-			follow_up_questions: Array.isArray(result.follow_up_questions) ? result.follow_up_questions : [],
+		return {
+			checkpointCompleted: result.score >= criteria.minScore,
+			score: result.score,
+			feedback: result.feedback,
+			confidence: result.confidence,
 		};
-
-		console.log('Validated result:', validatedResult);
-		return validatedResult;
 	} catch (error) {
 		console.error('OpenAI API error:', error);
 		throw new Error('Failed to analyze interview content');

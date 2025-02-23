@@ -77,8 +77,36 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			email_logs: {
+				Row: {
+					created_at: string;
+					email: string | null;
+					id: number;
+					subject: string | null;
+					time_sent: string | null;
+					type: string | null;
+				};
+				Insert: {
+					created_at?: string;
+					email?: string | null;
+					id?: number;
+					subject?: string | null;
+					time_sent?: string | null;
+					type?: string | null;
+				};
+				Update: {
+					created_at?: string;
+					email?: string | null;
+					id?: number;
+					subject?: string | null;
+					time_sent?: string | null;
+					type?: string | null;
+				};
+				Relationships: [];
+			};
 			interview_checkpoints: {
 				Row: {
+					analysis: Json | null;
 					checkpoint_id: number | null;
 					completed_at: string | null;
 					covered_topics: string[];
@@ -90,6 +118,7 @@ export type Database = {
 					updated_at: string | null;
 				};
 				Insert: {
+					analysis?: Json | null;
 					checkpoint_id?: number | null;
 					completed_at?: string | null;
 					covered_topics?: string[];
@@ -101,6 +130,7 @@ export type Database = {
 					updated_at?: string | null;
 				};
 				Update: {
+					analysis?: Json | null;
 					checkpoint_id?: number | null;
 					completed_at?: string | null;
 					covered_topics?: string[];
@@ -128,11 +158,62 @@ export type Database = {
 					},
 				];
 			};
+			interview_events: {
+				Row: {
+					actor_id: string;
+					created_at: string;
+					event_type: string;
+					id: string;
+					interview_id: string;
+					metadata: Json | null;
+				};
+				Insert: {
+					actor_id: string;
+					created_at?: string;
+					event_type: string;
+					id?: string;
+					interview_id: string;
+					metadata?: Json | null;
+				};
+				Update: {
+					actor_id?: string;
+					created_at?: string;
+					event_type?: string;
+					id?: string;
+					interview_id?: string;
+					metadata?: Json | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'interview_events_actor_id_fkey';
+						columns: ['actor_id'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'interview_events_interview_id_fkey';
+						columns: ['interview_id'];
+						isOneToOne: false;
+						referencedRelation: 'interview_details';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'interview_events_interview_id_fkey';
+						columns: ['interview_id'];
+						isOneToOne: false;
+						referencedRelation: 'interviews';
+						referencedColumns: ['id'];
+					},
+				];
+			};
 			interviews: {
 				Row: {
 					created_at: string;
 					description: string | null;
 					duration: unknown;
+					elevenlabs_conversation_id: string | null;
+					elevenlabs_signed_url: string | null;
 					id: string;
 					messages: Json | null;
 					name: string;
@@ -145,6 +226,8 @@ export type Database = {
 					created_at?: string;
 					description?: string | null;
 					duration?: unknown;
+					elevenlabs_conversation_id?: string | null;
+					elevenlabs_signed_url?: string | null;
 					id?: string;
 					messages?: Json | null;
 					name: string;
@@ -157,6 +240,8 @@ export type Database = {
 					created_at?: string;
 					description?: string | null;
 					duration?: unknown;
+					elevenlabs_conversation_id?: string | null;
+					elevenlabs_signed_url?: string | null;
 					id?: string;
 					messages?: Json | null;
 					name?: string;
@@ -196,7 +281,7 @@ export type Database = {
 				};
 				Relationships: [
 					{
-						foreignKeyName: 'interviews_candidates_candidate_id_fkey1';
+						foreignKeyName: 'interviews_candidates_candidate_id_fkey';
 						columns: ['candidate_id'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
@@ -267,24 +352,30 @@ export type Database = {
 					id: string;
 					interview_id: string;
 					invited_at: string;
+					rescheduled_at: string | null;
 					responded_at: string | null;
 					status: Database['public']['Enums']['invitation_status'];
+					updated_at: string | null;
 				};
 				Insert: {
 					email: string;
 					id?: string;
 					interview_id: string;
 					invited_at?: string;
+					rescheduled_at?: string | null;
 					responded_at?: string | null;
 					status?: Database['public']['Enums']['invitation_status'];
+					updated_at?: string | null;
 				};
 				Update: {
 					email?: string;
 					id?: string;
 					interview_id?: string;
 					invited_at?: string;
+					rescheduled_at?: string | null;
 					responded_at?: string | null;
 					status?: Database['public']['Enums']['invitation_status'];
+					updated_at?: string | null;
 				};
 				Relationships: [
 					{
@@ -472,7 +563,7 @@ export type Database = {
 				};
 				Relationships: [
 					{
-						foreignKeyName: 'interviews_candidates_candidate_id_fkey1';
+						foreignKeyName: 'interviews_candidates_candidate_id_fkey';
 						columns: ['candidate_id'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
@@ -623,6 +714,14 @@ export type Database = {
 					_organization_id: string;
 				};
 				Returns: boolean;
+			};
+			reschedule_interview_invitation: {
+				Args: {
+					p_invitation_id: string;
+					p_candidate_id: string;
+					p_start_at: string;
+				};
+				Returns: undefined;
 			};
 		};
 		Enums: {

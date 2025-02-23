@@ -31,25 +31,21 @@ type MessageEvent = {
 	source: MessageSource;
 };
 
-type ActionResponse = {
-	success: boolean;
-	messages: Message[];
-	checkpointCompleted: boolean;
-	nextCheckpoint?: number;
-	context?: {
-		covered_topics: string[];
-		remaining_topics: string[];
-		current_depth: number;
-		follow_up_questions: string[];
-		summary: string;
-	};
-};
-
 type DBMessage = {
 	id: string;
 	message: string;
 	source: string;
 	timestamp: string;
+};
+
+type CheckpointAnalysis = {
+	score: number;
+	feedback: {
+		covered: string[];
+		missing: string[];
+		suggestions: string[];
+	};
+	confidence: number;
 };
 
 type InterviewData = {
@@ -58,8 +54,8 @@ type InterviewData = {
 	interview_checkpoints: {
 		id: string;
 		checkpoint_id: number;
-		covered_topics: string[];
 		completed_at: string | null;
+		analysis?: CheckpointAnalysis;
 	}[];
 	messages: DBMessage[];
 };
@@ -69,36 +65,26 @@ const CHECKPOINTS = [
 		id: 1,
 		title: 'Project Experience',
 		description: 'Recent projects and contributions',
-		topics: ['project overview', 'personal contribution', 'technical implementation', 'team collaboration'],
-		required_topics: 3, // Need to cover at least 3 topics
 	},
 	{
 		id: 2,
 		title: 'Frontend Core',
 		description: 'JavaScript and frontend fundamentals',
-		topics: ['javascript core concepts', 'async programming', 'dom manipulation', 'browser apis'],
-		required_topics: 3,
 	},
 	{
 		id: 3,
 		title: 'Frontend Frameworks',
 		description: 'Framework expertise and styling',
-		topics: ['react experience', 'state management', 'styling approach', 'performance optimization'],
-		required_topics: 3,
 	},
 	{
 		id: 4,
 		title: 'Backend & Architecture',
 		description: 'Server-side and infrastructure',
-		topics: ['rest architecture', 'nodejs experience', 'database knowledge', 'api design'],
-		required_topics: 2,
 	},
 	{
 		id: 5,
 		title: 'Testing & DevOps',
 		description: 'Quality and deployment',
-		topics: ['testing approach', 'ci/cd experience', 'deployment process', 'docker usage'],
-		required_topics: 2,
 	},
 ];
 
@@ -110,7 +96,12 @@ type LoaderData = {
 		status: string;
 		currentCheckpoint: number;
 		messages: Message[];
-		coveredTopics: string[];
+		interview_checkpoints: {
+			id: string;
+			checkpoint_id: number;
+			completed_at: string | null;
+			analysis?: CheckpointAnalysis;
+		}[];
 	} | null;
 };
 
@@ -182,10 +173,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 							source: normalizeMessageSource(msg.source),
 							timestamp: new Date(msg.timestamp).getTime(),
 						})),
-						coveredTopics: interview.interview_checkpoints.reduce<string[]>(
-							(acc, checkpoint) => [...acc, ...(checkpoint.covered_topics || [])],
-							[],
-						),
+						interview_checkpoints: interview.interview_checkpoints.map((cp: any) => ({
+							id: cp.id,
+							checkpoint_id: cp.checkpoint_id,
+							completed_at: cp.completed_at,
+							analysis: cp.analysis,
+						})),
 					}
 				: null,
 		};
@@ -199,8 +192,6 @@ export async function action({ request }: ActionFunctionArgs) {
 	const formData = await request.formData();
 	const intent = formData.get('intent');
 	const interviewId = formData.get('interviewId');
-
-	console.log('intent', intent);
 
 	const headers = new Headers();
 	const supabase = createSupabaseServer(request, headers);
@@ -286,135 +277,96 @@ export async function action({ request }: ActionFunctionArgs) {
 
 			// Only analyze when it's a user message
 			if (source === 'user') {
-				const currentCheckpoint = CHECKPOINTS[checkpointId - 1];
+				const result = await analyzeCheckpointCompletion(
+					(messages as DBMessage[]).map(msg => ({
+						id: msg.id,
+						text: msg.message,
+						source: normalizeMessageSource(msg.source),
+						timestamp: new Date(msg.timestamp).getTime(),
+					})),
+					{
+						checkpointId,
+						checkpoint: CHECKPOINTS[checkpointId - 1],
+					},
+				);
 
-				if (currentCheckpoint) {
-					const result = await analyzeCheckpointCompletion(
-						(messages as DBMessage[]).map(msg => ({
+				if (result.checkpointCompleted) {
+					// Update the checkpoint directly here instead of submitting a new form
+					const { error: checkpointError } = await supabase.from('interview_checkpoints').upsert({
+						interview_id: interviewId,
+						checkpoint_id: checkpointId,
+						completed_at: new Date().toISOString(),
+						updated_at: new Date().toISOString(),
+						analysis: {
+							score: result.score,
+							feedback: result.feedback,
+							confidence: result.confidence,
+						},
+					});
+
+					if (checkpointError) {
+						console.error('Failed to update checkpoint:', checkpointError);
+						throw new Response('Failed to update checkpoint', { status: 500 });
+					}
+
+					return {
+						success: true,
+						messages: (messages as DBMessage[]).map(msg => ({
 							id: msg.id,
 							text: msg.message,
 							source: normalizeMessageSource(msg.source),
 							timestamp: new Date(msg.timestamp).getTime(),
 						})),
-						currentCheckpoint.topics,
-						currentCheckpoint.required_topics,
-					);
-
-					console.log('Analysis result:', result);
-					console.log('Covered topics length:', result.covered_topics?.length);
-					console.log('Covered topics:', result.covered_topics);
-
-					// Update covered topics in Supabase
-					if (Array.isArray(result.covered_topics) && result.covered_topics.length > 0) {
-						console.log('Checking if checkpoint exists...');
-
-						// First check if the checkpoint exists - use maybeSingle() to handle no results
-						const { data: existingCheckpoint, error: checkError } = await supabase
-							.from('interview_checkpoints')
-							.select('*') // Select all fields to help with debugging
-							.eq('interview_id', interviewId)
-							.eq('checkpoint_id', Number(checkpointId))
-							.maybeSingle();
-
-						console.log('Checkpoint check result:', { existingCheckpoint, checkError });
-
-						if (checkError) {
-							console.error('Error checking checkpoint:', checkError);
-							throw new Error(`Failed to check checkpoint: ${checkError.message}`);
-						}
-
-						if (!existingCheckpoint) {
-							console.log('Checkpoint does not exist, creating new one...');
-							console.log('Insert payload:', {
-								interview_id: interviewId,
-								checkpoint_id: Number(checkpointId),
-								title: currentCheckpoint.title,
-								description: currentCheckpoint.description,
-								covered_topics: result.covered_topics,
-							});
-
-							const { error: insertError } = await supabase.from('interview_checkpoints').insert({
-								interview_id: interviewId,
-								checkpoint_id: Number(checkpointId),
-								title: currentCheckpoint.title,
-								description: currentCheckpoint.description,
-								covered_topics: result.covered_topics,
-								created_at: new Date().toISOString(),
-								updated_at: new Date().toISOString(),
-								...(result.covered_topics.length >= currentCheckpoint.required_topics
-									? { completed_at: new Date().toISOString() }
-									: {}),
-							});
-
-							if (insertError) {
-								console.error('Failed to insert checkpoint:', insertError);
-								throw new Error(`Failed to insert checkpoint: ${insertError.message}`);
-							}
-							console.log('Successfully created checkpoint with covered topics');
-						} else {
-							console.log('Found existing checkpoint, updating...', existingCheckpoint);
-							const { error: updateError } = await supabase
-								.from('interview_checkpoints')
-								.update({
-									covered_topics: result.covered_topics,
-									updated_at: new Date().toISOString(),
-									...(result.covered_topics.length >= currentCheckpoint.required_topics
-										? { completed_at: new Date().toISOString() }
-										: {}),
-								})
-								.eq('interview_id', interviewId)
-								.eq('checkpoint_id', Number(checkpointId));
-
-							if (updateError) {
-								console.error('Failed to update covered topics:', updateError);
-								throw new Error(`Failed to update covered topics: ${updateError.message}`);
-							}
-							console.log('Successfully updated covered topics');
-						}
-					} else {
-						console.log('No covered topics to update');
-					}
-
-					// Update the conversation context with analysis results
-					const context = {
-						covered_topics: result.covered_topics || [],
-						remaining_topics: currentCheckpoint.topics.filter(topic => !result.covered_topics.includes(topic)),
-						follow_up_questions: result.follow_up_questions,
-						summary: result.summary,
-					};
-
-					// Check if checkpoint is completed
-					const topicsCovered = result.covered_topics.length;
-
-					if (topicsCovered >= currentCheckpoint.required_topics) {
-						return {
-							success: true,
-							messages,
-							checkpointCompleted: true,
-							nextCheckpoint: checkpointId + 1,
-							context,
-						};
-					}
-
-					return {
-						success: true,
-						messages,
-						checkpointCompleted: false,
-						context,
+						checkpointCompleted: true,
+						nextCheckpoint: checkpointId + 1,
+						analysis: {
+							score: result.score,
+							feedback: result.feedback,
+							confidence: result.confidence,
+						},
 					};
 				}
+
+				return {
+					success: true,
+					messages: (messages as DBMessage[]).map(msg => ({
+						id: msg.id,
+						text: msg.message,
+						source: normalizeMessageSource(msg.source),
+						timestamp: new Date(msg.timestamp).getTime(),
+					})),
+					checkpointCompleted: false,
+					analysis: {
+						score: result.score,
+						feedback: result.feedback,
+						confidence: result.confidence,
+					},
+				};
 			}
 
-			return { success: true, messages, checkpointCompleted: false };
+			return {
+				success: true,
+				messages: (messages as DBMessage[]).map(msg => ({
+					id: msg.id,
+					text: msg.message,
+					source: normalizeMessageSource(msg.source),
+					timestamp: new Date(msg.timestamp).getTime(),
+				})),
+				checkpointCompleted: false,
+			};
 		}
 
 		case 'updateCheckpoint': {
 			const checkpointId = formData.get('checkpointId');
-			const { error } = await supabase
-				.from('interview_checkpoints')
-				.update({ completed_at: new Date().toISOString() })
-				.eq('interview_id', interviewId)
-				.eq('checkpoint_id', checkpointId);
+			const analysis = formData.get('analysis');
+
+			const { error } = await supabase.from('interview_checkpoints').insert({
+				completed_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+				analysis: analysis ? JSON.parse(analysis as string) : null,
+				interview_id: interviewId,
+				id: checkpointId,
+			});
 
 			if (error) throw new Response('Failed to update checkpoint', { status: 500 });
 			return { success: true };
@@ -431,15 +383,28 @@ export default function AgentRoute() {
 	const [error, setError] = useState<string | null>(null);
 	const [messages, setMessages] = useState<Message[]>(interview?.messages || []);
 	const [currentCheckpoint, setCurrentCheckpoint] = useState(interview?.currentCheckpoint || 1);
-	const [coveredTopics, setCoveredTopics] = useState<string[]>(interview?.coveredTopics || []);
-	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const [isPaused, setIsPaused] = useState(interview?.status === 'paused');
+	const messagesEndRef = useRef<HTMLDivElement>(null);
 
 	// Add dynamic variables state
 	const [dynamicVariables] = useState<DynamicVariables>({
 		user_name: 'Robert',
 		job: 'Software Engineer',
 	});
+
+	// Update messages when loader data changes
+	useEffect(() => {
+		if (interview?.messages) {
+			setMessages(interview.messages);
+		}
+	}, [interview?.messages]);
+
+	// Update checkpoint when loader data changes
+	useEffect(() => {
+		if (interview?.currentCheckpoint) {
+			setCurrentCheckpoint(interview.currentCheckpoint);
+		}
+	}, [interview?.currentCheckpoint]);
 
 	const scrollToBottom = () => {
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -449,7 +414,7 @@ export default function AgentRoute() {
 		scrollToBottom();
 	}, [messages]);
 
-	const saveMessage = async (message: Message): Promise<ActionResponse> => {
+	const saveMessage = async (message: Message) => {
 		const formData = new FormData();
 		formData.append('intent', 'saveMessage');
 		formData.append('interviewId', '43ad56de-b836-4fb4-b534-62fbd35e1d60');
@@ -459,15 +424,18 @@ export default function AgentRoute() {
 		formData.append('timestamp', message.timestamp.toString());
 		formData.append('checkpointId', currentCheckpoint.toString());
 
-		const response = await submit(formData, { method: 'post' });
-		const result = response as unknown as ActionResponse;
+		try {
+			// Optimistically add the message to the UI
+			setMessages(prev => [...prev, message]);
 
-		// Update covered topics when we get new analysis
-		if (result.context?.covered_topics) {
-			setCoveredTopics(prev => [...new Set([...prev, ...result.context!.covered_topics])]);
+			// Submit the form and let the loader handle the response
+			submit(formData, { method: 'post' });
+		} catch (err) {
+			console.error('Failed to save message:', err);
+			setError('Failed to save message');
+			// Remove the optimistically added message on error
+			setMessages(prev => prev.filter(m => m.id !== message.id));
 		}
-
-		return result;
 	};
 
 	const conversation = useConversation({
@@ -487,26 +455,23 @@ export default function AgentRoute() {
 					id: checkpoint.id,
 					title: checkpoint.title,
 					description: checkpoint.description,
-					topics: checkpoint.topics,
-					required_topics: checkpoint.required_topics,
 				})),
 				current_checkpoint: currentCheckpoint,
 			},
 		},
 		onMessage: async ({ message, source }: MessageEvent) => {
-			const newMessage = {
-				id: crypto.randomUUID(),
-				text: message,
-				source,
-				timestamp: Date.now(),
-			};
+			try {
+				const newMessage = {
+					id: crypto.randomUUID(),
+					text: message,
+					source,
+					timestamp: Date.now(),
+				};
 
-			setMessages(prev => [...prev, newMessage]);
-			const result = await saveMessage(newMessage);
-
-			// Update checkpoint if completed
-			if (result.checkpointCompleted) {
-				setCurrentCheckpoint(result.nextCheckpoint!);
+				await saveMessage(newMessage);
+			} catch (err) {
+				console.error('Error in onMessage handler:', err);
+				setError('Failed to process message');
 			}
 		},
 		onError: (err: Error) => {
@@ -614,103 +579,9 @@ export default function AgentRoute() {
 	};
 
 	return (
-		<div className="flex min-h-screen bg-white">
-			{/* Left sidebar with checkpoints */}
-			<div className="w-80 border-r bg-white p-6 hidden md:block">
-				<h2 className="text-xl font-semibold mb-6 text-brand-primary">Interview Progress</h2>
-				<div className="space-y-8">
-					{CHECKPOINTS.map(checkpoint => {
-						const isActive = checkpoint.id === currentCheckpoint;
-						const isCompleted = checkpoint.id < currentCheckpoint;
-						const checkpointTopicsCovered = checkpoint.topics.filter(topic => coveredTopics.includes(topic));
-						const progress = Math.round((checkpointTopicsCovered.length / checkpoint.topics.length) * 100);
-
-						return (
-							<div
-								key={checkpoint.id}
-								className={cn(
-									'space-y-2 transition-all duration-300',
-									checkpoint.id <= currentCheckpoint ? 'opacity-100' : 'opacity-50',
-								)}
-							>
-								<div className="flex items-start gap-4">
-									{isCompleted ? (
-										<CheckCircle2 className="w-6 h-6 text-brand-primary mt-1" />
-									) : isActive ? (
-										<Circle className="w-6 h-6 text-brand-primary mt-1 animate-pulse" />
-									) : (
-										<Circle className="w-6 h-6 text-brand-secondary mt-1" />
-									)}
-									<div className="flex-1">
-										<h3
-											className={cn(
-												'font-medium',
-												isActive ? 'text-brand-primary' : isCompleted ? 'text-brand-primary' : 'text-brand-secondary',
-											)}
-										>
-											{checkpoint.title}
-										</h3>
-										<p className="text-sm text-gray-500">{checkpoint.description}</p>
-
-										{/* Progress bar for topics */}
-										<div className="mt-2">
-											<div className="flex justify-between text-xs text-brand-secondary">
-												<span>
-													{checkpointTopicsCovered.length} of {checkpoint.topics.length} topics
-												</span>
-												<span>{progress}%</span>
-											</div>
-											<div className="h-1 bg-brand-neutral rounded-full mt-1">
-												<div
-													className="h-full bg-brand-primary rounded-full transition-all duration-500"
-													style={{ width: `${progress}%` }}
-												/>
-											</div>
-										</div>
-
-										{/* Topics list */}
-										<div className="mt-3 space-y-1">
-											{checkpoint.topics.map(topic => (
-												<div
-													key={topic}
-													className={cn(
-														'flex items-center text-sm gap-2',
-														coveredTopics.includes(topic) ? 'text-brand-primary' : 'text-gray-400',
-													)}
-												>
-													{coveredTopics.includes(topic) ? (
-														<CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-													) : (
-														<Circle className="w-4 h-4 flex-shrink-0" />
-													)}
-													<span>{topic}</span>
-												</div>
-											))}
-										</div>
-									</div>
-								</div>
-							</div>
-						);
-					})}
-				</div>
-
-				{/* Overall Progress bar */}
-				<div className="mt-8">
-					<div className="flex justify-between text-sm text-brand-secondary mb-2">
-						<span>Overall Progress</span>
-						<span>{Math.round((currentCheckpoint / CHECKPOINTS.length) * 100)}%</span>
-					</div>
-					<div className="h-2 bg-brand-neutral rounded-full">
-						<div
-							className="h-full bg-brand-primary rounded-full transition-all duration-500"
-							style={{ width: `${(currentCheckpoint / CHECKPOINTS.length) * 100}%` }}
-						/>
-					</div>
-				</div>
-			</div>
-
+		<div className="flex min-h-screen bg-white relative">
 			{/* Main chat area */}
-			<div className="flex-1 flex flex-col p-6">
+			<div className="flex-1 flex flex-col p-6 md:pr-[20rem]">
 				<Card className="bg-gradient-to-br from-[#FFE5A3]/20 to-[#FFD166]/20 backdrop-blur-sm border-none shadow-lg p-6 relative overflow-hidden">
 					<div className="absolute inset-0">
 						<div className="absolute inset-0 bg-gradient-to-r from-[#FFE5A3] to-[#FFD166] opacity-10" />
@@ -731,11 +602,11 @@ export default function AgentRoute() {
 						))}
 					</div>
 					<style>{`
-              @keyframes float {
-                0%, 100% { transform: translateY(0); }
-                50% { transform: translateY(-10px); }
-              }
-            `}</style>
+						@keyframes float {
+							0%, 100% { transform: translateY(0); }
+							50% { transform: translateY(-10px); }
+						}
+					`}</style>
 					<div className="relative w-full h-[400px]">
 						<LottieAvatar isSpeaking={conversation.isSpeaking} />
 					</div>
@@ -820,6 +691,120 @@ export default function AgentRoute() {
 							</button>
 						</>
 					)}
+				</div>
+			</div>
+
+			{/* Checkpoint sidebar - now with detailed feedback */}
+			<div className="fixed bottom-0 right-0 w-80 bg-white border-l p-6 hidden md:block h-[80vh] overflow-y-auto">
+				<h2 className="text-xl font-semibold mb-6 text-brand-primary sticky top-0 bg-white pb-4 border-b">
+					Interview Progress
+				</h2>
+				<div className="space-y-6">
+					{CHECKPOINTS.map(checkpoint => {
+						const isActive = checkpoint.id === currentCheckpoint;
+						const isCompleted = checkpoint.id < currentCheckpoint;
+						const checkpointData = interview?.interview_checkpoints.find(cp => cp.checkpoint_id === checkpoint.id);
+						const analysis = checkpointData?.analysis;
+
+						return (
+							<div
+								key={checkpoint.id}
+								className={cn(
+									'transition-all duration-300',
+									checkpoint.id <= currentCheckpoint ? 'opacity-100' : 'opacity-50',
+								)}
+							>
+								<div className="flex items-start gap-4">
+									{isCompleted ? (
+										<CheckCircle2 className="w-6 h-6 text-brand-primary mt-1" />
+									) : isActive ? (
+										<Circle className="w-6 h-6 text-brand-primary mt-1 animate-pulse" />
+									) : (
+										<Circle className="w-6 h-6 text-brand-secondary mt-1" />
+									)}
+									<div className="flex-1">
+										<h3
+											className={cn(
+												'font-medium',
+												isActive ? 'text-brand-primary' : isCompleted ? 'text-brand-primary' : 'text-brand-secondary',
+											)}
+										>
+											{checkpoint.title}
+										</h3>
+										<p className="text-sm text-gray-500">{checkpoint.description}</p>
+
+										{/* Analysis Feedback */}
+										{analysis && (
+											<div className="mt-2 text-sm">
+												<div className="flex items-center gap-2 mb-1">
+													<div className="h-2 flex-1 bg-gray-200 rounded-full overflow-hidden">
+														<div
+															className={cn(
+																'h-full rounded-full',
+																analysis.score >= 0.7
+																	? 'bg-green-500'
+																	: analysis.score >= 0.4
+																		? 'bg-yellow-500'
+																		: 'bg-red-500',
+															)}
+															style={{ width: `${analysis.score * 100}%` }}
+														/>
+													</div>
+													<span className="text-xs text-gray-600">{Math.round(analysis.score * 100)}%</span>
+												</div>
+
+												{analysis.feedback.covered.length > 0 && (
+													<div className="mb-1 text-green-600">
+														<span className="font-medium">Covered:</span>
+														<ul className="list-disc list-inside">
+															{analysis.feedback.covered.map((item: string, i: number) => (
+																<li key={i} className="text-xs">
+																	{item}
+																</li>
+															))}
+														</ul>
+													</div>
+												)}
+
+												{analysis.feedback.missing.length > 0 && (
+													<div className="mb-1 text-red-600">
+														<span className="font-medium">Missing:</span>
+														<ul className="list-disc list-inside">
+															{analysis.feedback.missing.map((item: string, i: number) => (
+																<li key={i} className="text-xs">
+																	{item}
+																</li>
+															))}
+														</ul>
+													</div>
+												)}
+
+												{isActive && analysis.feedback.suggestions.length > 0 && (
+													<div className="text-blue-600">
+														<span className="font-medium">Suggestions:</span>
+														<ul className="list-disc list-inside">
+															{analysis.feedback.suggestions.map((item: string, i: number) => (
+																<li key={i} className="text-xs">
+																	{item}
+																</li>
+															))}
+														</ul>
+													</div>
+												)}
+											</div>
+										)}
+									</div>
+								</div>
+							</div>
+						);
+					})}
+				</div>
+
+				{/* Progress Indicator */}
+				<div className="sticky bottom-0 mt-8 text-center text-brand-secondary bg-white pt-4 border-t">
+					<p className="text-sm">
+						Checkpoint {currentCheckpoint} of {CHECKPOINTS.length}
+					</p>
 				</div>
 			</div>
 		</div>
