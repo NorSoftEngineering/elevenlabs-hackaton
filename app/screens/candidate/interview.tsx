@@ -578,8 +578,6 @@ export default function AgentRoute() {
 		setCurrentAgentId(newAgentId);
 	};
 
-	console.log(interview);
-
 	return (
 		<div className="flex min-h-screen bg-white relative">
 			{/* Main chat area */}

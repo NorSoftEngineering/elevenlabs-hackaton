@@ -1,9 +1,10 @@
-import { CheckCircle2, Clock, ExternalLink, FileText } from 'lucide-react';
 import { Link } from 'react-router';
 import { type LoaderFunctionArgs, redirect, useLoaderData } from 'react-router';
 import { Card } from '~/components/ui/card';
 import { cn } from '~/lib/utils';
 import { createSupabaseServer } from '~/utils/supabase.server';
+import { CheckCircle2, Clock, FileText, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
 
 type InterviewComplete = {
 	id: string;
@@ -56,8 +57,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 	const supabase = createSupabaseServer(request, new Headers());
 	const interviewId = params.id;
 
-	console.log('interviewId', interviewId);
-
 	const { data: sessionData } = await supabase.auth.getSession();
 
 	if (!sessionData.session) {
@@ -90,11 +89,6 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 export default function InterviewComplete() {
 	const { interview } = useLoaderData<{ interview: InterviewComplete }>();
 
-	const formatDuration = (duration: string) => {
-		const [hours, minutes] = duration.split(':');
-		return `${parseInt(hours)}h ${parseInt(minutes)}m`;
-	};
-
 	const getDurationInMinutes = (): number => {
 		const durationMs = new Date(interview.completed_date).getTime() - new Date(interview.started_date).getTime();
 		return Math.floor(durationMs / (1000 * 60));
@@ -102,7 +96,6 @@ export default function InterviewComplete() {
 
 	const durationMinutes = getDurationInMinutes();
 	const completionFeedback = getCompletionMessage(durationMinutes);
-
 	const isGoogleDoc = interview.brief_result?.includes('docs.google.com');
 
 	return (
@@ -157,10 +150,8 @@ export default function InterviewComplete() {
 							</div>
 							<div className="space-y-1">
 								<p className="text-sm text-gray-900">
-									{formatDuration(
-										millisecondsToHHMM(
-											new Date(interview.completed_date).getTime() - new Date(interview.started_date).getTime(),
-										),
+									{millisecondsToHHMM(
+										new Date(interview.completed_date).getTime() - new Date(interview.started_date).getTime(),
 									)}
 								</p>
 								<p className={cn('text-sm font-medium', completionFeedback.color)}>{completionFeedback.message}</p>
@@ -177,26 +168,12 @@ export default function InterviewComplete() {
 						Interview Results
 					</h3>
 
-					{isGoogleDoc ? (
-						<div className="space-y-4">
-							<div className="aspect-video w-full">
-								<iframe
-									src={`${interview.brief_result}?embedded=true`}
-									className="w-full h-full border-0"
-									allowFullScreen
-								/>
-							</div>
-							<a
-								href={interview.brief_result}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="inline-flex items-center gap-2 text-brand-primary hover:text-brand-secondary font-medium text-sm"
-							>
-								Open in New Tab
-								<ExternalLink className="w-4 h-4" />
-							</a>
-						</div>
-					) : (
+					<div className="space-y-4">
+						<p className="text-sm text-gray-600">
+							{isGoogleDoc
+								? 'Unable to embed document. Please use the link below to view.'
+								: 'Results are available via the link below.'}
+						</p>
 						<a
 							href={interview.brief_result}
 							target="_blank"
@@ -206,7 +183,7 @@ export default function InterviewComplete() {
 							View Results
 							<ExternalLink className="w-4 h-4" />
 						</a>
-					)}
+					</div>
 				</div>
 			</Card>
 		</div>
