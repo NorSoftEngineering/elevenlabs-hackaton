@@ -22,6 +22,40 @@ export const headers = () => ({
 	'Cache-Control': 'no-store',
 });
 
+export const meta = () => [
+	{
+		title: 'TalentBud',
+	},
+	{
+		description:
+			'Transform your recruitment process with AI-powered scheduling, intelligent screening, and automated feedback. The future of hiring is here.',
+	},
+	{
+		charset: 'utf-8',
+	},
+	{
+		name: 'viewport',
+		content: 'width=device-width, initial-scale=1.0',
+	},
+	{
+		property: 'og:url',
+		content: 'https://talent-bud.vercel.app/',
+	},
+	{
+		property: 'og:title',
+		content: 'TalentBud',
+	},
+	{
+		property: 'og:description',
+		content:
+			'Transform your recruitment process with AI-powered scheduling, intelligent screening, and automated feedback. The future of hiring is here.',
+	},
+	{
+		property: 'og:image',
+		content: 'https://talent-bud.vercel.app/social.png',
+	},
+];
+
 export const loader = async ({ request }: { request: Request }) => {
 	const headers = new Headers();
 	const supabase = createSupabaseServer(request, headers);

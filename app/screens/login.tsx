@@ -1,13 +1,21 @@
 import { createBrowserClient } from '@supabase/ssr';
-import { useLoaderData } from 'react-router';
+import { redirect, useLoaderData } from 'react-router';
 
 import { getSupabaseEnv } from '~/utils/env.server';
+import { createSupabaseServer } from '~/utils/supabase.server';
 
 export const headers = () => ({
 	'Cache-Control': 'no-store',
 });
 
 export const loader = async ({ request }: { request: Request }) => {
+	const supabase = createSupabaseServer(request, new Headers());
+
+	const { data: sessionData } = await supabase.auth.getSession();
+
+	if (sessionData.session) {
+		throw redirect('/dashboard');
+	}
 	const url = new URL(request.url);
 	return {
 		env: getSupabaseEnv(),
