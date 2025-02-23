@@ -19,16 +19,26 @@
 		"test:coverage": "vitest run --coverage"
 	},
 	"dependencies": {
+		"@11labs/client": "^0.0.7",
+		"@11labs/react": "^0.0.7",
 		"@headlessui/react": "^2.2.0",
 		"@heroicons/react": "^2.2.0",
+		"@radix-ui/react-slot": "^1.1.2",
 		"@react-router/node": "^7.2.0",
 		"@supabase/ssr": "^0.5.2",
 		"@supabase/supabase-js": "^2.48.1",
 		"@vercel/react-router": "^1.0.2",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
 		"isbot": "^5.1.1",
+		"lottie-react": "^2.4.1",
+		"lucide-react": "0.469.0",
+		"openai": "^4.85.4",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
-		"react-router": "^7.2.0"
+		"react-router": "^7.2.0",
+		"tailwind-merge": "^3.0.2",
+		"tailwindcss-animate": "^1.0.7"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.0",
