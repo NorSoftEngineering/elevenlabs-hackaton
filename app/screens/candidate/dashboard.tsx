@@ -81,13 +81,14 @@ export default function CandidateDashboard() {
 				const now = new Date();
 				const completed = allInterviews?.filter(i => new Date(i.interview_start_at) < now) || [];
 				const upcoming = allInterviews?.filter(i => new Date(i.interview_start_at) > now) || [];
-				const avgDuration = completed.reduce((acc, curr) => acc + curr.interview_duration, 0) / (completed.length || 1);
+				const totalDuration = completed.reduce((acc, curr) => acc + (curr.interview_duration || 0), 0);
+				const avgDuration = completed.length ? Math.round(totalDuration / completed.length) : 0;
 
 				setStats({
 					totalInterviews: allInterviews?.length || 0,
 					completedInterviews: completed.length,
 					upcomingInterviews: upcoming.length,
-					averageDuration: Math.round(avgDuration),
+					averageDuration: avgDuration,
 				});
 
 				// Calculate profile completion
