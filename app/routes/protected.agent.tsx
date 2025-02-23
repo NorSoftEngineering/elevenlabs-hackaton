@@ -9,8 +9,15 @@ import { cn } from '~/lib/utils';
 import { Card } from '~/components/ui/card';
 import { LottieAvatar } from '~/components/LottieAvatar';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
+import { analyzeCheckpointCompletion } from '~/utils/openai.server';
 
+// Message types
 type MessageSource = 'user' | 'assistant';
+
+// Helper to ensure valid message source
+function normalizeMessageSource(source: string): MessageSource {
+	return source === 'user' ? 'user' : 'assistant';
+}
 
 type Message = {
 	id: string;
@@ -24,43 +31,119 @@ type MessageEvent = {
 	source: MessageSource;
 };
 
-type InterviewMessage = {
+type ActionResponse = {
+	success: boolean;
+	messages: Message[];
+	checkpointCompleted: boolean;
+	nextCheckpoint?: number;
+	context?: {
+		covered_topics: string[];
+		remaining_topics: string[];
+		current_depth: number;
+		follow_up_questions: string[];
+		summary: string;
+	};
+};
+
+type DBMessage = {
 	id: string;
 	message: string;
 	source: string;
 	timestamp: string;
 };
 
+type InterviewData = {
+	id: string;
+	status: string;
+	interview_checkpoints: any[];
+	messages: DBMessage[];
+};
+
 const CHECKPOINTS = [
 	{
 		id: 1,
-		title: 'Background',
-		description: 'Professional experience',
-		keywords: ['experience', 'background', 'career', 'work history', 'previous roles'],
+		title: 'Project Experience',
+		description: 'Recent projects and contributions',
+		required_topics: [
+			'project overview and scope',
+			'personal contribution and role',
+			'implementation details',
+			'technical decisions made',
+			'challenges overcome',
+			'team collaboration',
+		],
+		completion_criteria: {
+			min_topics_covered: 5,
+			required_depth: 0.8,
+		},
 	},
 	{
 		id: 2,
-		title: 'Skills',
-		description: 'Technical expertise',
-		keywords: ['skills', 'technologies', 'programming', 'technical', 'expertise', 'proficient'],
+		title: 'Frontend Core',
+		description: 'JavaScript and frontend fundamentals',
+		required_topics: [
+			'javascript threading model',
+			'event loop understanding',
+			'promises and async',
+			'event bubbling',
+			'dom manipulation',
+			'browser apis',
+		],
+		completion_criteria: {
+			min_topics_covered: 5,
+			required_depth: 0.85,
+		},
 	},
 	{
 		id: 3,
-		title: 'Projects',
-		description: 'Past work',
-		keywords: ['projects', 'portfolio', 'developed', 'built', 'implemented'],
+		title: 'Frontend Frameworks',
+		description: 'Framework expertise and styling',
+		required_topics: [
+			'react experience',
+			'state management',
+			'component lifecycle',
+			'css frameworks comparison',
+			'tailwind vs styled-components',
+			'performance optimization',
+		],
+		completion_criteria: {
+			min_topics_covered: 5,
+			required_depth: 0.8,
+		},
 	},
 	{
 		id: 4,
-		title: 'Challenges',
-		description: 'Problem solving',
-		keywords: ['challenges', 'problems', 'difficult', 'solved', 'overcome'],
+		title: 'Backend & Architecture',
+		description: 'Server-side and infrastructure',
+		required_topics: [
+			'rest architecture',
+			'client-server communication',
+			'nodejs backend experience',
+			'serverless vs traditional',
+			'database knowledge',
+			'api design patterns',
+		],
+		completion_criteria: {
+			min_topics_covered: 4,
+			required_depth: 0.75,
+		},
 	},
 	{
 		id: 5,
-		title: 'Goals',
-		description: 'Future aspirations',
-		keywords: ['goals', 'future', 'aspire', 'plan', 'career goals'],
+		title: 'Testing & DevOps',
+		description: 'Quality and deployment',
+		required_topics: [
+			'unit testing approach',
+			'testing frameworks',
+			'ci/cd pipelines',
+			'github actions',
+			'docker usage',
+			'deployment platforms',
+		],
+		completion_criteria: {
+			min_topics_covered: 4,
+			required_depth: 0.75,
+		},
 	},
 ];
 
@@ -97,19 +180,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
 	const INTERVIEW_ID = '43ad56de-b836-4fb4-b534-62fbd35e1d60';
 
 	// Get active interview
-	const { data: interview, error: interviewError } = await supabase
+	const { data: interview } = (await supabase
 		.from('interviews')
 		.select(`
+			*,
 			interview_checkpoints(*),
 			messages
 		`)
 		.eq('id', INTERVIEW_ID)
-		.single();
+		.single()) as { data: InterviewData | null };
 
 	// Get signed URL from ElevenLabs
 	const { ELEVEN_LABS_API_KEY, ELEVEN_LABS_AGENT_ID } = getEnv();
 
-	console.log('interview', interviewError);
 	try {
 		const response = await fetch(
 			`https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${ELEVEN_LABS_AGENT_ID}`,
@@ -129,8 +212,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 		const body = await response.json();
 
-		console.log('interview', interview);
-
 		return {
 			signedUrl: body.signed_url,
 			organizationId: 'c949eba5-e3da-41d4-8b93-6ebe7bbf46b0', //hardcoded for now
@@ -139,10 +220,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 						id: interview.id,
 						status: interview.status,
 						currentCheckpoint: interview.interview_checkpoints.length,
-						messages: (interview.messages || []).map((msg: InterviewMessage) => ({
+						messages: (interview.messages || []).map((msg: DBMessage) => ({
 							id: msg.id,
 							text: msg.message,
-							source: msg.source as MessageSource,
+							source: normalizeMessageSource(msg.source),
 							timestamp: new Date(msg.timestamp).getTime(),
 						})),
 					}
@@ -219,16 +300,18 @@ export async function action({ request }: ActionFunctionArgs) {
 
 		case 'saveMessage': {
 			const message = formData.get('message');
-			const source = formData.get('source');
+			const source = normalizeMessageSource(formData.get('source') as string);
 			const timestamp = formData.get('timestamp');
 			const messageId = formData.get('id');
+			const checkpointId = Number(formData.get('checkpointId')) || 1;
 
-			const { data, error } = await supabase.rpc('append_interview_message', {
+			// First save the message
+			const { data: messages, error } = await supabase.rpc('append_interview_message', {
 				p_interview_id: interviewId,
 				p_message: {
 					id: messageId,
 					message,
-					source,
+					source, // Already normalized
 					timestamp: new Date(Number(timestamp)).toISOString(),
 				},
 			});
@@ -238,7 +321,62 @@ export async function action({ request }: ActionFunctionArgs) {
 				throw new Response('Failed to save message', { status: 500 });
 			}
 
-			return { success: true, messages: data };
+			// Only analyze when it's a user message
+			if (source === 'user') {
+				const currentCheckpoint = CHECKPOINTS[checkpointId - 1];
+
+				if (currentCheckpoint) {
+					const result = await analyzeCheckpointCompletion(
+						(messages as DBMessage[]).map(msg => ({
+							id: msg.id,
+							text: msg.message,
+							source: msg.source as MessageSource,
+							timestamp: new Date(msg.timestamp).getTime(),
+						})),
+						currentCheckpoint.required_topics,
+						currentCheckpoint.completion_criteria.min_topics_covered,
+						currentCheckpoint.completion_criteria.required_depth,
+					);
+
+					console.log('Analysis result:', result);
+
+					// Update the conversation context with analysis results
+					const context = {
+						covered_topics: result.covered_topics,
+						remaining_topics: currentCheckpoint.required_topics.filter(topic => !result.covered_topics.includes(topic)),
+						current_depth: result.confidence_scores.reduce((a, b) => a + b, 0) / result.confidence_scores.length,
+						follow_up_questions: result.follow_up_questions,
+						summary: result.summary,
+					};
+
+					// Check if checkpoint is completed
+					const topicsCovered = result.covered_topics.length;
+					const averageConfidence =
+						result.confidence_scores.reduce((a, b) => a + b, 0) / result.confidence_scores.length;
+
+					if (
+						topicsCovered >= currentCheckpoint.completion_criteria.min_topics_covered &&
+						averageConfidence >= currentCheckpoint.completion_criteria.required_depth
+					) {
+						return {
+							success: true,
+							messages,
+							checkpointCompleted: true,
+							nextCheckpoint: checkpointId + 1,
+							context,
+						};
+					}
+
+					return {
+						success: true,
+						messages,
+						checkpointCompleted: false,
+						context,
+					};
+				}
+			}
+
+			return { success: true, messages, checkpointCompleted: false };
 		}
 
 		case 'updateCheckpoint': {
@@ -281,47 +419,18 @@ export default function AgentRoute() {
 		scrollToBottom();
 	}, [messages]);
 
-	console.log('interview', interview);
+	const saveMessage = async (message: Message): Promise<ActionResponse> => {
+		const formData = new FormData();
+		formData.append('intent', 'saveMessage');
+		formData.append('interviewId', '43ad56de-b836-4fb4-b534-62fbd35e1d60');
+		formData.append('id', message.id);
+		formData.append('message', message.text);
+		formData.append('source', message.source);
+		formData.append('timestamp', message.timestamp.toString());
+		formData.append('checkpointId', currentCheckpoint.toString());
 
-	const saveMessage = async (message: Message) => {
-		submit(
-			{
-				intent: 'saveMessage',
-				interviewId: '43ad56de-b836-4fb4-b534-62fbd35e1d60',
-				id: message.id,
-				message: message.text,
-				source: message.source,
-				timestamp: message.timestamp.toString(),
-			},
-			{ method: 'post' },
-		);
-	};
-
-	const updateCheckpoint = async (message: string) => {
-		const messageLower = message.toLowerCase();
-		let highestMatchedCheckpoint = currentCheckpoint;
-
-		CHECKPOINTS.forEach(checkpoint => {
-			if (
-				checkpoint.id > currentCheckpoint &&
-				checkpoint.keywords.some(keyword => messageLower.includes(keyword.toLowerCase()))
-			) {
-				highestMatchedCheckpoint = checkpoint.id;
-			}
-		});
-
-		if (highestMatchedCheckpoint > currentCheckpoint) {
-			setCurrentCheckpoint(highestMatchedCheckpoint);
-
-			submit(
-				{
-					intent: 'updateCheckpoint',
-					interviewId: '43ad56de-b836-4fb4-b534-62fbd35e1d60',
-					checkpointId: highestMatchedCheckpoint,
-				},
-				{ method: 'post' },
-			);
-		}
+		const response = await submit(formData, { method: 'post' });
+		return response as unknown as ActionResponse;
 	};
 
 	const conversation = useConversation({
@@ -333,6 +442,20 @@ export default function AgentRoute() {
 			reconnectAttempts: 3,
 			timeout: 30000,
 		},
+		initialContext: {
+			context: {
+				user_name: dynamicVariables.user_name,
+				job: dynamicVariables.job,
+				checkpoints: CHECKPOINTS.map(checkpoint => ({
+					id: checkpoint.id,
+					title: checkpoint.title,
+					description: checkpoint.description,
+					required_topics: checkpoint.required_topics,
+					completion_criteria: checkpoint.completion_criteria,
+				})),
+				current_checkpoint: currentCheckpoint,
+			},
+		},
 		onMessage: async ({ message, source }: MessageEvent) => {
 			const newMessage = {
 				id: crypto.randomUUID(),
@@ -342,10 +465,11 @@ export default function AgentRoute() {
 			};
 
 			setMessages(prev => [...prev, newMessage]);
-			await saveMessage(newMessage);
+			const result = await saveMessage(newMessage);
 
-			if (source === 'assistant') {
-				await updateCheckpoint(message);
+			// Update checkpoint if completed
+			if (result.checkpointCompleted) {
+				setCurrentCheckpoint(result.nextCheckpoint!);
 			}
 		},
 		onError: (err: Error) => {
