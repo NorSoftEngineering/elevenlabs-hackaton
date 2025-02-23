@@ -1,10 +1,10 @@
+import { CheckCircle2, Clock, ExternalLink, FileText } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { type LoaderFunctionArgs, redirect, useLoaderData } from 'react-router';
 import { Card } from '~/components/ui/card';
 import { cn } from '~/lib/utils';
 import { createSupabaseServer } from '~/utils/supabase.server';
-import { CheckCircle2, Clock, FileText, ExternalLink } from 'lucide-react';
-import { useState } from 'react';
 
 type InterviewComplete = {
 	id: string;
