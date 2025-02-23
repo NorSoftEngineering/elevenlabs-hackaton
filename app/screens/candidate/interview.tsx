@@ -2,13 +2,14 @@ import { Form, redirect, useActionData, useLoaderData, useNavigation, useSubmit 
 
 import { useConversation } from '@11labs/react';
 import { CheckCircle2, Circle, Mic, Pause, Play, Send, Volume2, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { LottieAvatar } from '~/components/LottieAvatar';
 import { Card } from '~/components/ui/card';
 import { cn } from '~/lib/utils';
 import { analyzeCheckpointCompletion } from '~/utils/openai.server';
 import { createSupabaseServer } from '~/utils/supabase.server';
+import { Countdown } from '~/components/Countdown';
 
 // Message types
 type MessageSource = 'user' | 'assistant';
@@ -55,15 +56,19 @@ type CheckpointAnalysis = {
 
 type Interview = {
 	id: string;
-	status: string;
+	status: 'ready' | 'in_progress' | 'done';
 	currentCheckpoint: number;
 	messages: Message[];
+	started_date: string | null;
+	deadline: string | null;
+	remainingMinutes: number;
 	interview_checkpoints: {
 		id: string;
 		checkpoint_id: number;
 		completed_at: string | null;
 		analysis?: CheckpointAnalysis;
 	}[];
+	name: string;
 };
 
 type InterviewData = {
@@ -76,6 +81,8 @@ type InterviewData = {
 		analysis?: CheckpointAnalysis;
 	}[];
 	messages: DBMessage[];
+	started_date: string;
+	deadline: string | null;
 };
 
 const CHECKPOINTS = [
@@ -106,46 +113,120 @@ const CHECKPOINTS = [
 	},
 ];
 
+const AGENTS = [
+	{
+		agent_id: 'Zpp6J4Xq3NpEhs266fpy',
+		name: 'Hope Female American',
+	},
+	{
+		agent_id: 'ybrNX1zWwwqwgMAGc0lm',
+		name: 'Eric Male Laidback American',
+	},
+];
+
 type LoaderData = {
 	interview: Interview | null;
 	agents: Agent[];
 	selectedAgentId: string | null;
+	name: string;
 };
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
 	const supabase = createSupabaseServer(request, new Headers());
 	const interviewId = params.id;
 
-	// Get active interview
-	const { data: interview } = (await supabase
-		.from('interviews')
-		.select(`
-			*,
-			interview_checkpoints(*),
-			messages,
-			started_date
-		`)
-		.eq('id', interviewId)
-		.single()) as { data: InterviewData | null };
+	const { data: sessionData } = await supabase.auth.getSession();
 
-	const AGENTS = [
-		{
-			agent_id: 'Zpp6J4Xq3NpEhs266fpy',
-			name: 'Hope Female American',
-		},
-		{
-			agent_id: 'ybrNX1zWwwqwgMAGc0lm',
-			name: 'Eric Male Laidback American',
-		},
-	];
+	if (!sessionData.session) {
+		throw redirect('/login');
+	}
 
+	const [interviewsPromise, profilePromise] = await Promise.all([
+		supabase
+			.from('interviews')
+			.select('messages, started_date, deadline, status, name, interview_checkpoints(*)')
+			.eq('id', interviewId)
+			.single(),
+		supabase.from('candidate_profiles').select('name').eq('profile_id', sessionData.session?.user.id).single(),
+	]);
+
+	if (interviewsPromise.error || profilePromise.error) {
+		throw new Response('Failed to load interview', { status: 500 });
+	}
+
+	const interview = interviewsPromise.data;
+	const profileInfo = profilePromise.data;
+
+	if (interview.status === 'done') {
+		throw redirect(`/candidate/interviews/${interviewId}/completed`);
+	}
+
+	// If interview exists and has started
+	if (interview?.started_date) {
+		const startedDate = new Date(interview.started_date);
+		const now = new Date();
+
+		// Calculate deadline - always 1 hour after start
+		const deadline = new Date(startedDate.getTime() + 60 * 60 * 1000);
+
+		// If past deadline, mark as done
+		if (now > deadline && interview.status !== 'done') {
+			await supabase
+				.from('interviews')
+				.update({
+					status: 'done',
+					completed_date: new Date().toISOString(),
+				})
+				.eq('id', interviewId);
+
+			// Redirect to completed interview page
+			throw redirect(`/interviews/${interviewId}/complete`);
+		}
+
+		// Calculate remaining time
+		const remainingMinutes = Math.max(0, Math.floor((deadline.getTime() - now.getTime()) / (1000 * 60)));
+
+		// Normalize status
+		const normalizedStatus = interview.status === 'done' ? 'done' : interview.started_date ? 'in_progress' : 'ready';
+
+		return {
+			agents: AGENTS,
+			interview: interview
+				? {
+						...interview,
+						id: interview.id,
+						status: normalizedStatus,
+						currentCheckpoint: interview.interview_checkpoints.length,
+						remainingMinutes,
+						deadline: deadline.toISOString(),
+						messages: (interview.messages || []).map((msg: DBMessage) => ({
+							id: msg.id,
+							text: msg.message,
+							source: normalizeMessageSource(msg.source),
+							timestamp: new Date(msg.timestamp).getTime(),
+						})),
+						interview_checkpoints: interview.interview_checkpoints.map((cp: any) => ({
+							id: cp.id,
+							checkpoint_id: cp.checkpoint_id,
+							completed_at: cp.completed_at,
+							analysis: cp.analysis,
+						})),
+					}
+				: null,
+			name: profileInfo?.name || '',
+		};
+	}
+
+	// If interview hasn't started yet
 	return {
 		agents: AGENTS,
 		interview: interview
 			? {
+					...interview,
 					id: interview.id,
-					status: interview.status,
+					status: 'ready',
 					currentCheckpoint: interview.interview_checkpoints.length,
+					remainingMinutes: 60,
 					messages: (interview.messages || []).map((msg: DBMessage) => ({
 						id: msg.id,
 						text: msg.message,
@@ -160,6 +241,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 					})),
 				}
 			: null,
+		name: profileInfo?.name || '',
 	};
 }
 
@@ -171,43 +253,12 @@ export async function action({ request }: ActionFunctionArgs) {
 	const supabase = createSupabaseServer(request, new Headers());
 
 	switch (intent) {
-		case 'start': {
-			const name = formData.get('name');
-			const organizationId = formData.get('organizationId');
-			const job = formData.get('job');
-
-			const { data: interview, error } = await supabase
-				.from('interviews')
-				.insert({
-					name: `Interview with ${name}`,
-					organization_id: organizationId,
-					status: 'ready',
-					description: `Interview for ${job} position`,
-				})
-				.select()
-				.single();
-
-			if (error) throw new Response('Failed to create interview', { status: 500 });
-
-			// Initialize checkpoints
-			await supabase.from('interview_checkpoints').insert(
-				CHECKPOINTS.map(checkpoint => ({
-					interview_id: interview.id,
-					checkpoint_id: checkpoint.id,
-					title: checkpoint.title,
-					description: checkpoint.description,
-					covered_topics: [], // Initialize with empty array (non-null)
-					created_at: new Date().toISOString(),
-					updated_at: new Date().toISOString(),
-				})),
-			);
-
-			return { success: true, interviewId: interview.id };
-		}
-
 		case 'end': {
 			// Update interview status to done
-			const { error: updateError } = await supabase.from('interviews').update({ status: 'done' }).eq('id', interviewId);
+			const { error: updateError } = await supabase
+				.from('interviews')
+				.update({ status: 'done', completed_date: new Date().toISOString() })
+				.eq('id', interviewId);
 
 			if (updateError) {
 				console.error('Failed to end interview:', updateError);
@@ -229,7 +280,7 @@ export async function action({ request }: ActionFunctionArgs) {
 				// We don't throw here as the interview is already ended
 			}
 
-			return redirect('/protected/interviews');
+			return redirect('/candidate/interviews');
 		}
 
 		case 'saveMessage': {
@@ -367,7 +418,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function AgentRoute() {
-	const { interview, agents } = useLoaderData<LoaderData>();
+	const { interview, agents, name } = useLoaderData<LoaderData>();
 	const submit = useSubmit();
 	const navigation = useNavigation();
 	const [error, setError] = useState<string | null>(null);
@@ -434,8 +485,8 @@ export default function AgentRoute() {
 		},
 		initialContext: {
 			context: {
-				user_name: 'Robert',
-				job: 'Software Engineer',
+				user_name: name,
+				job: interview?.name || '',
 				checkpoints: CHECKPOINTS.map(checkpoint => ({
 					id: checkpoint.id,
 					title: checkpoint.title,
@@ -490,6 +541,7 @@ export default function AgentRoute() {
 	const isConnected = conversation.status === 'connected';
 
 	const handleStartSession = async () => {
+		if (interview?.status === 'done') return;
 		try {
 			setError(null);
 			const formData = new FormData();
@@ -499,10 +551,11 @@ export default function AgentRoute() {
 
 			await conversation.startSession({
 				context: {
-					user_name: 'Robert',
-					job: 'Software Engineer',
+					user_name: name,
+					job: interview?.name || '',
 				},
 			});
+			submit(formData, { method: 'post' });
 		} catch (err) {
 			console.error('Failed to start session:', err);
 			setError('Failed to start conversation');
@@ -539,10 +592,20 @@ export default function AgentRoute() {
 		setCurrentAgentId(newAgentId);
 	};
 
+	console.log(interview);
+
 	return (
 		<div className="flex min-h-screen bg-white relative">
 			{/* Main chat area */}
 			<div className="flex-1 flex flex-col p-6 md:pr-[20rem] relative">
+				{/* Timer Display */}
+				{!interview?.started_date && interview?.deadline && (
+					<div className="fixed top-20 right-4 mt-2 bg-white shadow-lg rounded-lg px-4 py-2 z-50">
+						<div className="text-sm font-medium text-gray-600">Time Remaining</div>
+						<Countdown deadline={interview.deadline} />
+					</div>
+				)}
+
 				{/* Sticky Avatar Card */}
 				<div className="sticky top-16 z-10 bg-white pb-6">
 					<Card className="bg-gradient-to-br from-[#FFE5A3]/20 to-[#FFD166]/20 backdrop-blur-sm border-none shadow-lg p-6 relative overflow-hidden rounded-none">
@@ -646,20 +709,22 @@ export default function AgentRoute() {
 								{!isConnected ? (
 									<button
 										onClick={handleStartSession}
-										disabled={isConnecting || navigation.state === 'submitting'}
+										disabled={isConnecting || navigation.state === 'submitting' || interview?.status === 'done'}
 										className={cn(
 											'w-full flex gap-2 items-center justify-center py-2 px-4 rounded-lg text-white',
-											isConnecting || navigation.state === 'submitting'
+											isConnecting || navigation.state === 'submitting' || interview?.status === 'done'
 												? 'bg-brand-secondary cursor-not-allowed'
 												: 'bg-brand-primary hover:bg-brand-secondary',
 										)}
 									>
-										<Play className="w-4 h-4" />
-										{isConnecting
-											? 'Connecting...'
-											: navigation.state === 'submitting'
-												? 'Switching Agent...'
-												: 'Start Interview'}
+										{interview?.status === 'done' ? <CheckCircle2 className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+										{interview?.status === 'done'
+											? 'Interview Completed'
+											: isConnecting
+												? 'Connecting...'
+												: navigation.state === 'submitting'
+													? 'Switching Agent...'
+													: 'Start Interview'}
 									</button>
 								) : (
 									<button
@@ -722,10 +787,46 @@ export default function AgentRoute() {
 
 			{/* Checkpoint sidebar - now with detailed feedback */}
 			<div className="fixed bottom-0 right-0 w-80 bg-white border-l p-6 hidden md:block h-[80vh] overflow-y-auto">
-				<h2 className="text-xl font-semibold mb-6 text-brand-primary sticky top-0 bg-white pb-4 border-b">
-					Interview Progress
-				</h2>
-				<div className="space-y-6">
+				<div className="sticky top-0 bg-white pb-4 space-y-4">
+					<h2 className="text-xl font-semibold text-brand-primary border-b pb-2">Interview Progress</h2>
+
+					{interview?.started_date && (
+						<div className="space-y-4">
+							<div className="flex items-center justify-between">
+								<span className="text-sm text-gray-600">Status</span>
+								<span
+									className={cn('px-2 py-1 rounded-full text-xs font-medium', {
+										'bg-green-100 text-green-800': interview.status === 'done',
+										'bg-blue-100 text-blue-800': interview.status === 'in_progress',
+										'bg-yellow-100 text-yellow-800': interview.status === 'ready',
+									})}
+								>
+									{interview.status === 'in_progress'
+										? 'In Progress'
+										: interview.status === 'done'
+											? 'Completed'
+											: 'Ready'}
+								</span>
+							</div>
+
+							<div className="space-y-2">
+								<div className="flex items-center justify-between">
+									<span className="text-sm text-gray-600">Started At</span>
+									<span className="text-sm font-medium">{new Date(interview.started_date).toLocaleTimeString()}</span>
+								</div>
+
+								{interview.deadline && (
+									<div className="flex items-center justify-between">
+										<span className="text-sm text-gray-600">Deadline</span>
+										<span className="text-sm font-medium">{new Date(interview.deadline).toLocaleTimeString()}</span>
+									</div>
+								)}
+							</div>
+						</div>
+					)}
+				</div>
+
+				<div className="space-y-6 mt-6">
 					{CHECKPOINTS.map(checkpoint => {
 						const isActive = checkpoint.id === currentCheckpoint;
 						const isCompleted = checkpoint.id < currentCheckpoint;

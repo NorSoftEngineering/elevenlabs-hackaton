@@ -17,8 +17,7 @@ export function InterviewSchedule({ interview, onSchedule }: Props) {
 		const formData = new FormData(e.currentTarget);
 		const date = formData.get('date') as string;
 		const time = formData.get('time') as string;
-		console.log('date', date);
-		console.log('time', time);
+
 		if (date && time && onSchedule) {
 			onSchedule(`${date}T${time}`);
 			setIsOpen(false);
