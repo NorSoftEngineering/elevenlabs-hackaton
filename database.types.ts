@@ -560,6 +560,7 @@ export type Database = {
 					interview_start_at: string | null;
 					interview_status: Database['public']['Enums']['interview_status'] | null;
 					organization_name: string | null;
+					candidate_email: string | null;
 				};
 				Relationships: [
 					{
