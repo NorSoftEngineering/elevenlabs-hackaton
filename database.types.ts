@@ -210,6 +210,7 @@ export type Database = {
 			interviews: {
 				Row: {
 					brief_result: string | null;
+					completed_date: string | null;
 					created_at: string;
 					deadline: string | null;
 					description: string | null;
@@ -221,11 +222,13 @@ export type Database = {
 					name: string;
 					organization_id: string;
 					start_at: string | null;
+					started_date: string | null;
 					status: Database['public']['Enums']['interview_status'];
 					updated_at: string;
 				};
 				Insert: {
 					brief_result?: string | null;
+					completed_date?: string | null;
 					created_at?: string;
 					deadline?: string | null;
 					description?: string | null;
@@ -237,11 +240,13 @@ export type Database = {
 					name: string;
 					organization_id: string;
 					start_at?: string | null;
+					started_date?: string | null;
 					status?: Database['public']['Enums']['interview_status'];
 					updated_at?: string;
 				};
 				Update: {
 					brief_result?: string | null;
+					completed_date?: string | null;
 					created_at?: string;
 					deadline?: string | null;
 					description?: string | null;
@@ -253,6 +258,7 @@ export type Database = {
 					name?: string;
 					organization_id?: string;
 					start_at?: string | null;
+					started_date?: string | null;
 					status?: Database['public']['Enums']['interview_status'];
 					updated_at?: string;
 				};
@@ -355,32 +361,38 @@ export type Database = {
 			interviews_invitations: {
 				Row: {
 					email: string;
+					expires_at: string;
 					id: string;
 					interview_id: string;
 					invited_at: string;
 					rescheduled_at: string | null;
 					responded_at: string | null;
 					status: Database['public']['Enums']['invitation_status'];
+					token: string;
 					updated_at: string | null;
 				};
 				Insert: {
 					email: string;
+					expires_at?: string;
 					id?: string;
 					interview_id: string;
 					invited_at?: string;
 					rescheduled_at?: string | null;
 					responded_at?: string | null;
 					status?: Database['public']['Enums']['invitation_status'];
+					token?: string;
 					updated_at?: string | null;
 				};
 				Update: {
 					email?: string;
+					expires_at?: string;
 					id?: string;
 					interview_id?: string;
 					invited_at?: string;
 					rescheduled_at?: string | null;
 					responded_at?: string | null;
 					status?: Database['public']['Enums']['invitation_status'];
+					token?: string;
 					updated_at?: string | null;
 				};
 				Relationships: [
@@ -663,6 +675,18 @@ export type Database = {
 					p_start_at: string;
 				};
 				Returns: undefined;
+			};
+			validate_invitation_token: {
+				Args: {
+					p_token: string;
+				};
+				Returns: {
+					invitation_id: string;
+					interview_id: string;
+					email: string;
+					status: Database['public']['Enums']['invitation_status'];
+					is_expired: boolean;
+				}[];
 			};
 		};
 		Enums: {
