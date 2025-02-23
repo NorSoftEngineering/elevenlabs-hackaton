@@ -549,7 +549,9 @@ export default function AgentRoute() {
 					job: interview?.name || '',
 				},
 			});
-			submit(formData, { method: 'post' });
+			if (!interview?.started_date) {
+				submit(formData, { method: 'post' });
+			}
 		} catch (err) {
 			console.error('Failed to start session:', err);
 			setError('Failed to start conversation');
