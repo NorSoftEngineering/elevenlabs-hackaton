@@ -8,6 +8,9 @@ export default [
 	// Role selection ()
 	route('role-selection', './screens/role-selection.tsx'),
 
+	// Interview join route
+	route('interview/join/:token', './screens/interview.join.tsx'),
+
 	// Protected dashboard routes (for interviewers)
 	route('dashboard', './routes/protected.interviewer.tsx', [
 		index('./screens/dashboard.tsx'),

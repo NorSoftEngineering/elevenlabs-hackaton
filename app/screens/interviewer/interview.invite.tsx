@@ -139,7 +139,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 	const { data: createdInvitations, error } = await supabase
 		.from('interviews_invitations')
 		.insert(invitations)
-		.select();
+		.select('*, token');
 
 	if (error) {
 		return { error: 'Failed to create invitations', success: false } as const;
@@ -147,6 +147,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
 	// Call webhook
 	try {
+		const baseUrl = new URL(request.url).origin;
 		await fetch(`https://hook.eu2.make.com/4u0brjktjwfm18k5hj78pojv009s61fx`, {
 			method: 'POST',
 			headers: {
@@ -154,7 +155,10 @@ export async function action({ request, params }: ActionFunctionArgs) {
 			},
 			body: JSON.stringify({
 				interviewId: params.id,
-				invitations: createdInvitations,
+				invitations: createdInvitations.map(inv => ({
+					...inv,
+					joinUrl: `${baseUrl}/interview/join/${inv.token}`,
+				})),
 				invited_by: session.user.id,
 				organization_id: orgMember.organization_id,
 			}),
