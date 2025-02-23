@@ -12,11 +12,73 @@ import {
 	Star,
 	Users,
 	Zap,
+	X,
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Card } from '~/components/ui/card';
+import { Dialog, Transition } from '@headlessui/react';
+import { Fragment, useState } from 'react';
+
+interface VideoModalProps {
+	isOpen: boolean;
+	onClose: () => void;
+}
+
+function VideoModal({ isOpen, onClose }: VideoModalProps) {
+	return (
+		<Transition appear show={isOpen} as={Fragment}>
+			<Dialog as="div" className="relative z-50" onClose={onClose}>
+				<Transition.Child
+					as={Fragment}
+					enter="ease-out duration-300"
+					enterFrom="opacity-0"
+					enterTo="opacity-100"
+					leave="ease-in duration-200"
+					leaveFrom="opacity-100"
+					leaveTo="opacity-0"
+				>
+					<div className="fixed inset-0 bg-black/70" />
+				</Transition.Child>
+
+				<div className="fixed inset-0 overflow-y-auto">
+					<div className="flex min-h-full items-center justify-center p-4">
+						<Transition.Child
+							as={Fragment}
+							enter="ease-out duration-300"
+							enterFrom="opacity-0 scale-95"
+							enterTo="opacity-100 scale-100"
+							leave="ease-in duration-200"
+							leaveFrom="opacity-100 scale-100"
+							leaveTo="opacity-0 scale-95"
+						>
+							<Dialog.Panel className="relative w-full max-w-4xl rounded-2xl bg-white p-6 shadow-xl">
+								<button
+									onClick={onClose}
+									className="absolute -top-12 right-0 text-white hover:text-white/80 transition-colors"
+								>
+									<X className="h-8 w-8" />
+								</button>
+								<div className="aspect-video w-full">
+									<iframe
+										width="100%"
+										height="100%"
+										src="https://www.youtube.com/embed/N5XgMituaKk"
+										title="TalentBud Demo"
+										allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+										allowFullScreen
+										className="rounded-lg"
+									/>
+								</div>
+							</Dialog.Panel>
+						</Transition.Child>
+					</div>
+				</div>
+			</Dialog>
+		</Transition>
+	);
+}
 
 interface Testimonial {
 	name: string;
@@ -26,6 +88,7 @@ interface Testimonial {
 }
 
 export default function LandingPage() {
+	const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 	const testimonials: Testimonial[] = [
 		{
 			name: 'Sarah Chen',
@@ -145,16 +208,17 @@ export default function LandingPage() {
 									<ArrowRight className="ml-2 h-5 w-5" />
 								</Button>
 							</Link>
-							<a href="https://www.youtube.com/watch?v=N5XgMituaKk" target="_blank" rel="noopener noreferrer">
-								<Button
-									size="lg"
-									variant="outline"
-									className="h-14 px-8 rounded-full text-lg border-slate-300 hover:bg-slate-100/80"
-								>
-									Watch Demo
-								</Button>
-							</a>
+							<Button
+								size="lg"
+								variant="outline"
+								className="h-14 px-8 rounded-full text-lg border-slate-300 hover:bg-slate-100/80"
+								onClick={() => setIsVideoModalOpen(true)}
+							>
+								Watch Demo
+							</Button>
 						</motion.div>
+
+						<VideoModal isOpen={isVideoModalOpen} onClose={() => setIsVideoModalOpen(false)} />
 
 						<motion.div
 							initial={{ opacity: 0, y: 20 }}
@@ -376,6 +440,51 @@ export default function LandingPage() {
 								</div>
 							</Card>
 						))}
+					</div>
+				</div>
+			</section>
+
+			{/* Demo Video CTA */}
+			<section className="py-32 bg-slate-50 relative overflow-hidden">
+				<div className="absolute inset-0 bg-grid-slate-200/60 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
+				<div className="container relative">
+					<div className="flex flex-col lg:flex-row items-center gap-12">
+						<div className="flex-1 text-left">
+							<Badge variant="secondary" className="bg-white shadow-lg shadow-blue-100 px-6 py-2 rounded-full mb-6">
+								<Bot className="h-4 w-4 text-[#4A90E2] mr-2" />
+								<span className="text-slate-800">See it in Action</span>
+							</Badge>
+							<h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+								Watch How TalentBud <br />
+								Transforms Hiring
+							</h2>
+							<p className="text-lg text-slate-600 mb-8">
+								Get a firsthand look at our AI-powered platform. See how TalentBud streamlines your recruitment process from start to finish.
+							</p>
+							<Button
+								size="lg"
+								onClick={() => setIsVideoModalOpen(true)}
+								className="bg-gradient-to-r from-[#4A90E2] to-[#7FB3FF] hover:opacity-90 transition-opacity h-14 px-8 rounded-full text-lg"
+							>
+								Watch Demo Video
+								<ArrowRight className="ml-2 h-5 w-5" />
+							</Button>
+						</div>
+						<div className="flex-1">
+							<div className="relative group cursor-pointer" onClick={() => setIsVideoModalOpen(true)}>
+								<div className="absolute inset-0 bg-gradient-to-r from-[#4A90E2] to-[#7FB3FF] rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity" />
+								<div className="absolute inset-0 flex items-center justify-center">
+									<div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl">
+										<div className="w-0 h-0 border-t-[12px] border-t-transparent border-l-[20px] border-l-[#4A90E2] border-b-[12px] border-b-transparent ml-1" />
+									</div>
+								</div>
+								<img
+									src="https://img.youtube.com/vi/N5XgMituaKk/maxresdefault.jpg"
+									alt="TalentBud Demo Preview"
+									className="w-full rounded-2xl shadow-2xl"
+								/>
+							</div>
+						</div>
 					</div>
 				</div>
 			</section>
