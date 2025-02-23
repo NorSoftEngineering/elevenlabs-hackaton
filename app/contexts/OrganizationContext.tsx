@@ -2,6 +2,8 @@ import { createBrowserClient } from '@supabase/ssr';
 import { User } from '@supabase/supabase-js';
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import type { Organization, OrganizationMember } from '~/types/organization';
+import { isInterviewerRole } from '~/types/role';
+import { useRole } from './RoleContext';
 
 type OrganizationContextType = {
 	currentOrganization: Organization | null;
@@ -33,9 +35,17 @@ export function OrganizationProvider({ children, env }: OrganizationProviderProp
 	const [userRole, setUserRole] = useState<OrganizationMember['role'] | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [user, setUser] = useState<User | null>(null);
+	const { userRole: globalUserRole } = useRole();
 
 	useEffect(() => {
-		// Get initial session
+		// If user is not an interviewer, clear organization data
+		if (!isInterviewerRole(globalUserRole)) {
+			setCurrentOrganization(null);
+			setUserOrganizations([]);
+			setUserRole(null);
+			return;
+		}
+
 		supabase.auth.getSession().then(({ data: { session } }) => {
 			setUser(session?.user ?? null);
 		});
@@ -49,7 +59,7 @@ export function OrganizationProvider({ children, env }: OrganizationProviderProp
 		return () => {
 			subscription.unsubscribe();
 		};
-	}, [supabase]);
+	}, [supabase, globalUserRole]);
 
 	useEffect(() => {
 		if (!user?.id) {
@@ -61,6 +71,8 @@ export function OrganizationProvider({ children, env }: OrganizationProviderProp
 
 		async function loadOrganizations() {
 			try {
+				if (!user) return;
+
 				const { data: memberships, error: membershipError } = await supabase
 					.from('organization_members')
 					.select('organization_id, role')
@@ -114,6 +126,8 @@ export function OrganizationProvider({ children, env }: OrganizationProviderProp
 
 		async function loadUserRole() {
 			try {
+				if (!user) return;
+
 				const { data, error } = await supabase
 					.from('organization_members')
 					.select('role')
